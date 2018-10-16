@@ -2,8 +2,6 @@
 import random
 import numpy as np
 
-# Markov Reward Process ************
-
 class MSimpleMRPstate( object ) :
 
     def __init__( self, name, terminal = False ) :

@@ -2,8 +2,6 @@
 import random
 import numpy as np
 
-# Markov Process *******************
-
 class MSimpleMPstate( object ) :
     
     def __init__( self, name, terminal = False ) :
