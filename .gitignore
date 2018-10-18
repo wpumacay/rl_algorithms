@@ -4,3 +4,7 @@
 __pycache__/
 _bp/
 .pytest_cache/
+
+*.sw?
+_site
+_pages
