@@ -27,19 +27,3 @@ class EnvInitializationException( Exception ) :
         super( EnvInitializationException, self ).__init__( message )
         # extra information about the exception
         self.info = info
-
-
-class EnvTest( object ) :
-
-    def __init__( self, nameid ) :
-        super( EnvTest, self ).__init__()
-
-        self.m_nameid = nameid
-
-    def nameid( self ) :
-        return self.m_nameid
-
-    def run( self ) : 
-        return False
-
-    

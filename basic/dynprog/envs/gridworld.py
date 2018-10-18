@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .base import BaseEnv, EnvTest, EnvInitializationException
+from .base import BaseEnv, EnvInitializationException
 
 CELL_EMPTY = 0
 CELL_BLOCKED = 1
@@ -202,33 +202,3 @@ class GridWorldEnv( BaseEnv ) :
 
     def actions( self ) :
         return self.m_actions
-
-class GridWorldEnvInitializationTest( EnvTest ) :
-
-    def __init__( self, nameid ) :
-        super( GridWorldEnvInitializationTest, self ).__init__( nameid )
-    
-    def run( self ) :
-        # test gridlayout
-        _grid = [ [ '.', '.', '.', 'G' ],
-                  [ '.', 'B', '.', 'H' ],
-                  [ '.', 'B', '.', '.' ],
-                  [ '.', '.', '.', '.' ] ]
-
-        # test gridworld
-        _env = GridWorldEnv( _grid )
-
-class GridWorldEnvTransitionsTest( EnvTest ) :
-
-    def __init__( self, nameid ) :
-        super( GridWorldEnvTransitionsTest, self ).__init__( nameid )
-
-    def run( self ) :
-        # test gridlayout
-        _grid = [ [ '.', '.', '.', 'G' ],
-                  [ '.', 'B', '.', 'H' ],
-                  [ '.', 'B', '.', '.' ],
-                  [ '.', '.', '.', '.' ] ]
-
-        # test gridworld
-        _env = GridWorldEnv( _grid )
