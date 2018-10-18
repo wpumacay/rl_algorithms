@@ -6,4 +6,4 @@ python :
 install :
   - pip install -r requirements.txt
 script : 
-  - pytest basic/dynprog/ci_test_gridworld.py
+  - pytest basic/dynprog/tests/ci_test_gridworld.py
