@@ -1,0 +1,21 @@
+name: rl_env
+channels:
+    - conda-forge
+    - akode
+dependencies:
+    - python==3.6
+    - numpy
+    - matplotlib
+    - jupyter
+    - scipy
+    - h5py
+    - pip:
+        - tqdm
+        - sklearn
+        - pytest
+        - appdirs
+        - pillow
+        - pyglet
+        - atari-py
+        - gym
+        - tensorflow
