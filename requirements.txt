@@ -9,4 +9,6 @@ pillow
 pyglet
 atari-py
 gym
-tensorflow
+tensorflow-gpu
+torch
+torchvision
