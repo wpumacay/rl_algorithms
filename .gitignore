@@ -4,6 +4,7 @@
 __pycache__/
 _bp/
 .pytest_cache/
+.ipynb_checkpoints*
 
 _pages/
 _site/

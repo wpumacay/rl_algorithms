@@ -28,6 +28,11 @@ ACTION_DOWN = 1
 ACTION_LEFT = 2
 ACTION_RIGHT = 3
 
+BOOK_LAYOUT = [ [ 'G', '.', '.', '.' ],
+                [ '.', '.', '.', '.' ],
+                [ '.', '.', '.', '.' ],
+                [ '.', '.', '.', 'G' ] ]
+
 DEFAULT_LAYOUT = [ [ '.', '.', '.', '.' ],
                    [ '.', 'H', '.', 'H' ],
                    [ '.', '.', '.', 'H' ],
@@ -37,11 +42,10 @@ class GridWorldEnv( Env ) :
 
     def __init__( self, 
                   gridLayout = None, 
-                  gamma = 0.9, 
                   noise = 0.1,
-                  rewardAtGoal = 100.0, 
-                  rewardAtHole = -100.0,
-                  rewardPerStep = -1.0 ) :
+                  rewardAtGoal = 1.0, 
+                  rewardAtHole = -1.0,
+                  rewardPerStep = 0.0 ) :
         super( GridWorldEnv, self ).__init__()
 
         # layout for this gridworld, of the form :
@@ -59,9 +63,6 @@ class GridWorldEnv( Env ) :
         self.m_rows = 0
         self.m_cols = 0
 
-        self.m_nS = 0 # number of states
-        self.m_nA = 0 # number of actions
-
         self.m_currentState = 0 # top-left
         # transition model P( s', r | s, a ) in the form ...
         # P = { s : { a : [ ( p, nextState, reward, done ) ] } }
@@ -73,8 +74,6 @@ class GridWorldEnv( Env ) :
         self.m_seed = 0
         self.m_randomState = None
 
-        # discount factor
-        self.m_gamma = gamma
         # prob of going sideways
         self.m_noise = noise
         # timestep
@@ -158,18 +157,18 @@ class GridWorldEnv( Env ) :
 
         plt.imshow( _mat )
         plt.pause( 0.01 )
-
+        
     @property
     def P( self ) :
         return self.m_transitionModel
     
     @property
     def nS( self ) :
-        return self.m_nS
+        return self.observation_space.n
     
     @property
     def nA( self ) :
-        return self.m_nA
+        return self.action_space.n
     
     ## Internal functionality ##################################################################################
 
@@ -215,7 +214,8 @@ class GridWorldEnv( Env ) :
         self.m_transitionModel = { s : { a : [] for a in self.m_actions } for s in self.m_states }
 
         # compute initial state probability distribution (where it can be at the beginning)
-        self.m_isd = np.array( self.m_gridLayout == b'.' ).astype( 'float64' ).ravel()
+        self.m_isd = ( np.array( self.m_gridLayout ) == '.' ).astype( 'float64' ).ravel()
+        print( 'isd: ', self.m_isd )
         self.m_isd /= self.m_isd.sum()
 
         for _row in range( self.m_rows ) :
