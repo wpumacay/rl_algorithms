@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Gregor, the coding cat</title>
-    <link>/</link>
+    <link>https://github.com/wpumacay/rl_algorithms/tree/master/docs/</link>
     <description>Recent content on Gregor, the coding cat</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Tue, 26 Mar 2019 23:52:12 -0500</lastBuildDate>
     
-	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://github.com/wpumacay/rl_algorithms/tree/master/docs/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Hello World</title>
-      <link>/posts/hello-world/</link>
+      <link>https://github.com/wpumacay/rl_algorithms/tree/master/docs/posts/hello-world/</link>
       <pubDate>Tue, 26 Mar 2019 23:52:12 -0500</pubDate>
       
-      <guid>/posts/hello-world/</guid>
+      <guid>https://github.com/wpumacay/rl_algorithms/tree/master/docs/posts/hello-world/</guid>
       <description></description>
     </item>
     

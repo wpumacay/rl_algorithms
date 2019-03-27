@@ -3,29 +3,29 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>/posts/hello-world/</loc>
+    <loc>https://github.com/wpumacay/rl_algorithms/tree/master/docs/posts/hello-world/</loc>
     <lastmod>2019-03-26T23:52:12-05:00</lastmod>
   </url>
   
   <url>
-    <loc>/categories/</loc>
+    <loc>https://github.com/wpumacay/rl_algorithms/tree/master/docs/categories/</loc>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>/</loc>
-    <lastmod>2019-03-26T23:52:12-05:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/posts/</loc>
+    <loc>https://github.com/wpumacay/rl_algorithms/tree/master/docs/</loc>
     <lastmod>2019-03-26T23:52:12-05:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>/tags/</loc>
+    <loc>https://github.com/wpumacay/rl_algorithms/tree/master/docs/posts/</loc>
+    <lastmod>2019-03-26T23:52:12-05:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://github.com/wpumacay/rl_algorithms/tree/master/docs/tags/</loc>
     <priority>0</priority>
   </url>
   
