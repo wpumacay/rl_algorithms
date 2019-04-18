@@ -1,5 +1,4 @@
 
-# import ipdb
 import numpy as np
 from collections import defaultdict
 
@@ -51,8 +50,8 @@ class MCAgentDiscrete( MCAgent ) :
         self.m_gamma = gamma
 
         self.m_startEpsilon = epsilon
-        self.m_endEpsilon = 0.01
-        self.m_epsilonDecay = 0.9999
+        self.m_endEpsilon = 0.0
+        self.m_epsilonDecay = 0.99999
         self.m_epsilon = epsilon
 
         self.m_alpha = alpha
@@ -73,10 +72,12 @@ class MCAgentDiscrete( MCAgent ) :
 
     def _epsGreedyAct( self, state ) :
         # non greedy actions have equal prob. eps/nA
-        _probs = np.ones( self.m_nA ) / self.m_nA
+        _probs = np.ones( self.m_nA ) * self.m_epsilon / self.m_nA
         # greedy action has prob 1 - eps + eps/nA
         _greedyAction = np.argmax( self.m_qTable[state] )
         _probs[ _greedyAction ] += 1.0 - self.m_epsilon
+        # normalize just in case
+        _probs = _probs / np.sum( _probs )
 
         # decrease epsilon using a 1/t schedule
         self.m_epsilon = max( self.m_endEpsilon, self.m_epsilon * self.m_epsilonDecay )
@@ -103,6 +104,9 @@ class MCAgentDiscrete( MCAgent ) :
 
     def stateActionVisits( self ) :
         return self.m_qNcount
+
+    def epsilon( self ) :
+        return self.m_epsilon
 
 class MCAgentDiscreteFirstVisit( MCAgentDiscrete ) :
 

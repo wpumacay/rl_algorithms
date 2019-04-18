@@ -13,7 +13,7 @@ from mc_agent import MCAgentDiscreteFirstVisit
 GAMMA = 1.0
 EPSILON = 1.0
 ALPHA = None
-NUM_EPISODES = 10000
+NUM_EPISODES = 100000
 MAX_STEPS_PER_EPISODE = 1000
 
 _env = gridworld.GridWorldEnv( gridworld.BOOK_LAYOUT,
@@ -35,8 +35,8 @@ for _ in tqdm( range( NUM_EPISODES ) ) :
     while True :
 
         ## _action = _env.action_space.sample()
-        _action = np.random.randint( _env.nA )
-        ## _action = _agent.act( _state, inference = False )
+        ## _action = np.random.randint( _env.nA )
+        _action = _agent.act( _state, inference = False )
         _snext, _reward, _done, _ = _env.step( _action )
         #_env.render()
         #_reward = ( GAMMA ** _steps ) * _reward
@@ -65,5 +65,7 @@ gridworld_utils.plotVTableInGrid( _agent.V(), _env.rows, _env.cols )
 # gridworld_utils.plotVisitsInGrid( _agent.stateVisits(), _env.rows, _env.cols )
 
 gridworld_utils.plotQTableInGrid( _agent.Q(), _env.rows, _env.cols )
+
+print( 'epsilon: ', _agent.epsilon() )
 
 _ = input( 'Press ENTER to continue ...' )
