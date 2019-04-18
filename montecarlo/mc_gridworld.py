@@ -13,8 +13,8 @@ from mc_agent import MCAgentDiscreteFirstVisit
 GAMMA = 1.0
 EPSILON = 1.0
 ALPHA = None
-NUM_EPISODES = 100000
-MAX_STEPS_PER_EPISODE = 100000
+NUM_EPISODES = 10000
+MAX_STEPS_PER_EPISODE = 1000
 
 _env = gridworld.GridWorldEnv( gridworld.BOOK_LAYOUT,
                                noise = 0.0,
@@ -36,6 +36,7 @@ for _ in tqdm( range( NUM_EPISODES ) ) :
 
         ## _action = _env.action_space.sample()
         _action = np.random.randint( _env.nA )
+        ## _action = _agent.act( _state, inference = False )
         _snext, _reward, _done, _ = _env.step( _action )
         #_env.render()
         #_reward = ( GAMMA ** _steps ) * _reward
@@ -54,13 +55,15 @@ for _ in tqdm( range( NUM_EPISODES ) ) :
     _agent.endEpisode( { 'episode' : _episode } )
 
 
-print( 'V' )
-print( _agent.V() )
+## print( 'V' )
+## print( _agent.V() )
 
 plt.ion()
 
 gridworld_utils.plotVTableInGrid( _agent.V(), _env.rows, _env.cols )
-gridworld_utils.plotVisitsInHistogram( _agent.stateVisits(), _env.nS )
-gridworld_utils.plotVisitsInGrid( _agent.stateVisits(), _env.rows, _env.cols )
+# gridworld_utils.plotVisitsInHistogram( _agent.stateVisits(), _env.nS )
+# gridworld_utils.plotVisitsInGrid( _agent.stateVisits(), _env.rows, _env.cols )
+
+gridworld_utils.plotQTableInGrid( _agent.Q(), _env.rows, _env.cols )
 
 _ = input( 'Press ENTER to continue ...' )

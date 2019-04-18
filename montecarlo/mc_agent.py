@@ -49,9 +49,12 @@ class MCAgentDiscrete( MCAgent ) :
         self.m_nS = nS
         self.m_nA = nA
         self.m_gamma = gamma
+
         self.m_startEpsilon = epsilon
         self.m_endEpsilon = 0.01
+        self.m_epsilonDecay = 0.9999
         self.m_epsilon = epsilon
+
         self.m_alpha = alpha
 
         self.m_vTable = defaultdict( lambda: 0.0 )
@@ -68,17 +71,23 @@ class MCAgentDiscrete( MCAgent ) :
     def update( self, info ) :
         pass # all computations are made at the end of an episode
 
-    def _egreedyAct( self, state ) :
+    def _epsGreedyAct( self, state ) :
         # non greedy actions have equal prob. eps/nA
         _probs = np.ones( self.m_nA ) / self.m_nA
         # greedy action has prob 1 - eps + eps/nA
         _greedyAction = np.argmax( self.m_qTable[state] )
         _probs[ _greedyAction ] += 1.0 - self.m_epsilon
 
+        # decrease epsilon using a 1/t schedule
+        self.m_epsilon = max( self.m_endEpsilon, self.m_epsilon * self.m_epsilonDecay )
+
         return np.random.choice( self.m_nA, p = _probs )
 
-    def act( self, state ) :
-        return np.argmax( self.m_qTable[state] )
+    def act( self, state, inference ) :
+        if inference :
+            return np.argmax( self.m_qTable[state] )
+        else :
+            return self._epsGreedyAct( state )
 
     def reset( self ) :
         self.m_epsilon = self.m_startEpsilon
@@ -100,7 +109,7 @@ class MCAgentDiscreteFirstVisit( MCAgentDiscrete ) :
     def __init__( self, nS, nA, gamma, epsilon, alpha = None ) :
         super( MCAgentDiscreteFirstVisit, self ).__init__( nS, nA, gamma, epsilon, alpha )
 
-    def _mcPredictionFirstVisit( self, info ) :
+    def endEpisode( self, info ) :
         # sanity check
         assert ( 'episode' in info ), 'Must pass episode in info dict'
 
@@ -157,11 +166,3 @@ class MCAgentDiscreteFirstVisit( MCAgentDiscrete ) :
 
             # ##################################################################
 
-    def _mcControlFirstVisit( self, info ) :
-        pass
-
-    def endEpisode( self, info ):
-        # MC-First visit for Vpi
-        self._mcPredictionFirstVisit( info )
-        # MC-First visit for Q*
-        self._mcControlFirstVisit( info )
