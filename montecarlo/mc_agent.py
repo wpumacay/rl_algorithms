@@ -1,4 +1,5 @@
 
+# import ipdb
 import numpy as np
 from collections import defaultdict
 
@@ -20,6 +21,25 @@ class MCAgent( object ):
     def act( self, state ) :
         raise NotImplementedError( "MCAgent::act> virtual method" )
 
+    def reset( self ) :
+        pass # nothing for now
+
+    def computeReturnsToGo( self, rewards, gamma ) :
+        # compute discounts to go
+        _discs = np.array( [ gamma ** t for t in range( len( rewards ) ) ] )
+        # compute returns to go
+        _returnsToGo = []
+        for i in range( len( _discs ) ) :
+            _G = 0.0
+            if i == 0 :
+                _G = np.sum( rewards[:] * _discs[:] )
+            else :
+                _G = np.sum( rewards[i:] * _discs[:-i] )
+
+            _returnsToGo.append( _G )
+
+        return np.array( _returnsToGo )
+
 
 class MCAgentDiscrete( MCAgent ) :
 
@@ -29,13 +49,18 @@ class MCAgentDiscrete( MCAgent ) :
         self.m_nS = nS
         self.m_nA = nA
         self.m_gamma = gamma
+        self.m_startEpsilon = epsilon
+        self.m_endEpsilon = 0.01
         self.m_epsilon = epsilon
         self.m_alpha = alpha
 
-        self.m_vtable = defaultdict( lambda: 0.0 )
-        self.m_qtable = defaultdict( lambda: np.zeros( nA ) )
-        self.m_ncount = defaultdict( lambda: 0 )
-        self.m_gret   = defaultdict( lambda: 0 )
+        self.m_vTable = defaultdict( lambda: 0.0 )
+        self.m_vNcount = defaultdict( lambda: 0 )
+        self.m_vGret   = defaultdict( lambda: 0.0 )
+
+        self.m_qTable = defaultdict( lambda: np.zeros( nA ) )
+        self.m_qNcount = defaultdict( lambda: np.zeros( nA ) )
+        self.m_qGret = defaultdict( lambda: np.zeros( nA ) )
 
     def beginEpisode( self ) :
         pass # just do nothing
@@ -47,52 +72,96 @@ class MCAgentDiscrete( MCAgent ) :
         # non greedy actions have equal prob. eps/nA
         _probs = np.ones( self.m_nA ) / self.m_nA
         # greedy action has prob 1 - eps + eps/nA
-        _greedyAction = np.argmax( self.m_qtable[state] )
+        _greedyAction = np.argmax( self.m_qTable[state] )
         _probs[ _greedyAction ] += 1.0 - self.m_epsilon
 
         return np.random.choice( self.m_nA, p = _probs )
 
     def act( self, state ) :
-        return np.argmax( self.m_qtable[state] )
+        return np.argmax( self.m_qTable[state] )
+
+    def reset( self ) :
+        self.m_epsilon = self.m_startEpsilon
 
     def V( self ) :
-        return self.m_vtable
+        return self.m_vTable
 
     def Q( self ) :
-        return self.m_qtable
+        return self.m_qTable
 
+    def stateVisits( self ) :
+        return self.m_vNcount
+
+    def stateActionVisits( self ) :
+        return self.m_qNcount
 
 class MCAgentDiscreteFirstVisit( MCAgentDiscrete ) :
 
     def __init__( self, nS, nA, gamma, epsilon, alpha = None ) :
         super( MCAgentDiscreteFirstVisit, self ).__init__( nS, nA, gamma, epsilon, alpha )
 
-    def _mcPredictionFirstVisitV( self, info ) :
+    def _mcPredictionFirstVisit( self, info ) :
         # sanity check
         assert ( 'episode' in info ), 'Must pass episode in info dict'
 
-        _G = 0
+        # grabt the episode information
         _episode = info['episode']
-        _episode.reverse()
-        _visited = {}
+        # and extract the rewards list
+        _, _, _rewards = zip( *_episode )
+        _rewards = np.array( _rewards )
+        # compute the returns to go
+        _returns = self.computeReturnsToGo( _rewards, self.m_gamma )
+        # and some checking for first-visit
+        _visitedS = defaultdict( lambda: False )
+        _visitedSA = defaultdict( lambda: np.zeros( self.m_nA, dtype = np.bool ) )
 
-        for _s, _a, _r in _episode :
-            _G = _r + self.m_gamma * _G
-            if _s not in _visited :
-                _visited[_s] = True
-                self.m_ncount[_s] += 1
-                self.m_gret[_s] += _G
-                if self.m_alpha is None :
-                    ## self.m_vtable[_s] += ( 1. / self.m_ncount[_s] ) * ( _G - self.m_vtable[_s] )
-                    self.m_vtable[_s] = self.m_gret[_s] / self.m_ncount[_s]
-                else :
-                    self.m_vtable[_s] += self.m_alpha * ( _G - self.m_vtable[_s] )
+        for i in range( len( _episode ) ) :
+            _G = _returns[i]
+            _s = _episode[i][0]
+            _a = _episode[i][1]
 
-    def _mcControlFirstVisitQ( self, info ) :
+            # check for first-visit (state only) ###############################
+            if _visitedS[_s] :
+                continue
+
+            # cache the visit
+            _visitedS[_s] = True
+            # update counters
+            self.m_vNcount[_s] += 1
+            self.m_vGret[_s] += _G
+
+            # update the v-table
+            if self.m_alpha is None :
+                ## self.m_vTable[_s] += ( 1. / self.m_vNcount[_s] ) * ( _G - self.m_vTable[_s] )
+                self.m_vTable[_s] = self.m_vGret[_s] / self.m_vNcount[_s]
+            else :
+                self.m_vTable[_s] += self.m_alpha * ( _G - self.m_vTable[_s] )
+
+            # ##################################################################
+
+            # check for first-visit (state-action) #############################
+            if _visitedSA[_s][_a]:
+                continue
+
+            # cache the visit
+            _visitedSA[_s][_a] = True
+            # update counters
+            self.m_qNcount[_s][_a] += 1
+            self.m_qGret[_s][_a] += _G
+
+            # update the q-table
+            if self.m_alpha is None :
+                self.m_qTable[_s][_a] = self.m_qGret[_s][_a] / self.m_qNcount[_s][_a]
+            else :
+                self.m_qTable[_s][_a] += self.m_alpha * ( _G - self.m_qTable[_s][_a] )
+
+            # ##################################################################
+
+    def _mcControlFirstVisit( self, info ) :
         pass
 
     def endEpisode( self, info ):
         # MC-First visit for Vpi
-        self._mcPredictionFirstVisitV( info )
+        self._mcPredictionFirstVisit( info )
         # MC-First visit for Q*
-        self._mcControlFirstVisitQ( info )
+        self._mcControlFirstVisit( info )

@@ -170,6 +170,15 @@ class GridWorldEnv( Env ) :
     def nA( self ) :
         return self.action_space.n
     
+    @property
+    def cols(self):
+        return self.m_cols
+    
+    @property
+    def rows(self):
+        return self.m_rows
+    
+
     ## Internal functionality ##################################################################################
 
     def _pos2state( self, row, col ) :
