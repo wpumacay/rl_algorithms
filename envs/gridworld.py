@@ -45,7 +45,8 @@ class GridWorldEnv( Env ) :
                   noise = 0.1,
                   rewardAtGoal = 1.0, 
                   rewardAtHole = -1.0,
-                  rewardPerStep = 0.0 ) :
+                  rewardPerStep = 0.0,
+                  renderInteractive = False ) :
         super( GridWorldEnv, self ).__init__()
 
         # layout for this gridworld, of the form :
@@ -98,6 +99,21 @@ class GridWorldEnv( Env ) :
             self.m_gridLayout = DEFAULT_LAYOUT
             self._buildFromLayout()
 
+        self.m_renderInteractive = renderInteractive
+
+        if renderInteractive :
+            # force interactive mode
+            plt.ion()
+            self.m_fig = plt.figure()
+            self.m_axes = self.m_fig.add_subplot( 111 )
+            self.m_cid = self.m_fig.canvas.mpl_connect( 'key_press_event', self._onUserKey )
+            self.m_userKey = -1
+        else :
+            self.m_fig = None
+            self.m_axes = None
+            self.m_cid = None
+            self.m_userKey = -1
+
         self.seed()
         self.reset()
 
@@ -137,8 +153,11 @@ class GridWorldEnv( Env ) :
         return [_snext, _reward, _done, {}]
 
     def render( self ) :
-        plt.ion()
-        plt.cla()
+
+        if self.m_renderInteractive :
+            self.m_axes.cla()
+        else :
+            plt.cla()
 
         _mat = np.zeros( ( self.m_rows, self.m_cols, 3 ) )
 
@@ -155,9 +174,20 @@ class GridWorldEnv( Env ) :
         _mat[ _row, _col, 1 ] = COLOR_CURRENT_POSITION[1]
         _mat[ _row, _col, 2 ] = COLOR_CURRENT_POSITION[2]
 
-        plt.imshow( _mat )
-        plt.pause( 0.01 )
+        if self.m_renderInteractive :
+            self.m_axes.imshow( _mat )
+            plt.pause( 0.01 )
+        else :
+            plt.imshow( _mat )
         
+    def getUserAction( self ) :
+        # grab previous key
+        _userAction = self.m_userKey
+        # and clear current action
+        self.m_userKey = -1
+
+        return _userAction
+
     @property
     def P( self ) :
         return self.m_transitionModel
@@ -335,5 +365,17 @@ class GridWorldEnv( Env ) :
         prob_n = np.asarray( prob_n )
         csprob_n = np.cumsum( prob_n )
         return ( csprob_n > self.m_randomState.rand() ).argmax()
+
+    def _onUserKey( self, event ) :
+        if event.key == 'up' :
+            self.m_userKey = 0
+        elif event.key == 'down' :
+            self.m_userKey = 1
+        elif event.key == 'left' :
+            self.m_userKey = 2
+        elif event.key == 'right' :
+            self.m_userKey = 3
+        else :
+            self.m_userKey = -1
 
     ## #########################################################################################################
