@@ -98,7 +98,8 @@ class GridWorldEnv( Env ) :
                   rewardAtGoal = 1.0, 
                   rewardAtHole = -1.0,
                   rewardPerStep = 0.0,
-                  renderInteractive = False ) :
+                  renderInteractive = False,
+                  randomSeed = None ) :
         super( GridWorldEnv, self ).__init__()
 
         # layout for this gridworld, of the form :
@@ -187,16 +188,12 @@ class GridWorldEnv( Env ) :
             self.m_userKey = -1
             self.m_userRequestFinish = False
 
-        self.seed()
+        self.seed( randomSeed )
         self.reset()
 
     def reset( self ) :
         self.m_timestep = 0
         self.m_currentState = self._categoricalSample( self.m_isd )
-
-        _row, _col = self._state2pos( self.m_currentState )
-        if self.m_grid[_row,_col] == CELL_BLOCKED :
-            print( '?????wtf??????' )
 
         return self.m_currentState
 

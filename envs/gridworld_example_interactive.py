@@ -3,12 +3,13 @@ from gridworld import *
 
 MAX_STEPS_PER_EPISODE = 1000
 
-_env = GridWorldEnv( DRLBOOTCAMP_CLIFF_LAYOUT,
+_env = GridWorldEnv( BOOK_LAYOUT,
                      noise = 0.0,
                      rewardAtGoal = 10.0, 
                      rewardAtHole = -10.0,
                      rewardPerStep = 0.0,
-                     renderInteractive = True )
+                     renderInteractive = True,
+                     randomSeed = 1 )
 
 
 _state = _env.reset()

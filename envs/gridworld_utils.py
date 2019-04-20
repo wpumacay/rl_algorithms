@@ -5,8 +5,26 @@ from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
 
+def _ndarrayToDict( ndarray, dimToStop = -1 ) :
+    _ndim = ndarray.ndim
+
+    if _ndim == dimToStop :
+        return ndarray
+    elif _ndim == 1 :
+        return { k : ndarray[k] for k in range( len( ndarray ) ) }
+    else :
+        _dict = {}
+    
+        for i in range( len( ndarray ) ) :
+            _dict[i] = _ndarrayToDict( ndarray[i], dimToStop )
+
+    return _dict
 
 def _plotStateTableInGrid( table, rows, cols, title = 'State table', extFig = None, extAxes = None ) : 
+
+    # just in case, if ndarray, convert it to a dictionary
+    if type( table ) == np.ndarray :
+        table = _ndarrayToDict( table )
 
     if ( extFig is None ) or ( extAxes is None ) :
         _fig = plt.figure()
@@ -60,6 +78,10 @@ def plotVisitsInHistogram( visitsTable, nStates ) :
     plt.show()
 
 def _plotStateActionTableInGrid( table, rows, cols, title = 'StateAction table', extFig = None, extAxes = None ) :
+
+    # just in case, if ndarray, convert it to a dictionary
+    if type( table ) == np.ndarray :
+        table = _ndarrayToDict( table, dimToStop = 1 )
 
     if ( extFig is None ) or ( extAxes is None ) :
         _fig = plt.figure()
