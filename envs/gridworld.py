@@ -9,11 +9,13 @@ CELL_EMPTY      = 0
 CELL_BLOCKED    = 1
 CELL_HOLE       = 2
 CELL_GOAL       = 3
+CELL_START      = 4
 
 CELL_CHAR_MAP = { '.' : CELL_EMPTY, 
                   'B' : CELL_BLOCKED, 
                   'H' : CELL_HOLE, 
-                  'G' : CELL_GOAL }
+                  'G' : CELL_GOAL,
+                  'S' : CELL_START }
 
 CELL_COLORS = [ [ 0.0, 1.0, 0.0 ],
                 [ 0.0, 0.0, 0.0 ],
@@ -32,6 +34,12 @@ BOOK_LAYOUT = [ [ 'G', '.', '.', '.' ],
                 [ '.', '.', '.', '.' ],
                 [ '.', '.', '.', '.' ],
                 [ '.', '.', '.', 'G' ] ]
+
+DRLBOOTCAMP_CLIFF_LAYOUT = [ [ '.', '.', '.', '.', '.' ],
+                             [ '.', 'B', '.', '.', '.' ],
+                             [ '.', 'B', '1', 'B', 'G' ],
+                             [ 'S', '.', '.', '.', '.' ],
+                             [ 'H', 'H', 'H', 'H', 'H' ] ]
 
 BOOK_LAYOUT_MEDIUM = [ [ 'G', '.', '.', '.', 'G', 'G', '.', '.', '.', 'G'],
                        [ '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'],
@@ -103,6 +111,15 @@ class GridWorldEnv( Env ) :
         # H : hole cell
         # G : goal/terminal cell
         self.m_gridLayout = gridLayout if ( gridLayout is not None ) else DEFAULT_LAYOUT
+        # store rewards for states given by the user in the layout
+        # [ [ '5', '.', '.',  '10' ],
+        #   [ '.', 'B', '.', '-10' ],
+        #   [ '.', 'B', '.',  '.' ],
+        #   [ 'S', '.', '.',  '.' ] ]
+        # numbers at cells are stored as rewards, and states are treated as goals
+        self.m_gridRewardsLayout = {}
+        # store start positions if given by user
+        self.m_gridStartLayout = []
 
         self.m_grid = None
         self.m_rows = 0
@@ -140,7 +157,17 @@ class GridWorldEnv( Env ) :
         _success = self._buildFromLayout()
 
         if not _success :
+            # use default layout in the layout given was not correct
             self.m_gridLayout = DEFAULT_LAYOUT
+            # clear some buffers (in case something went wrong in first attempt)
+            self.m_grid = None
+            self.m_isd = []
+            self.m_states = []
+            self.m_statesMap = []
+            self.m_gridRewardsLayout = {}
+            self.m_gridStartLayout = []
+            self.m_transitionModel = {}
+            # create the layout again, with the default layout
             self._buildFromLayout()
 
         self.m_renderInteractive = renderInteractive
@@ -152,11 +179,13 @@ class GridWorldEnv( Env ) :
             self.m_axes = self.m_fig.add_subplot( 111 )
             self.m_cid = self.m_fig.canvas.mpl_connect( 'key_press_event', self._onUserKey )
             self.m_userKey = -1
+            self.m_userRequestFinish = False
         else :
             self.m_fig = None
             self.m_axes = None
             self.m_cid = None
             self.m_userKey = -1
+            self.m_userRequestFinish = False
 
         self.seed()
         self.reset()
@@ -164,6 +193,10 @@ class GridWorldEnv( Env ) :
     def reset( self ) :
         self.m_timestep = 0
         self.m_currentState = self._categoricalSample( self.m_isd )
+
+        _row, _col = self._state2pos( self.m_currentState )
+        if self.m_grid[_row,_col] == CELL_BLOCKED :
+            print( '?????wtf??????' )
 
         return self.m_currentState
 
@@ -245,14 +278,30 @@ class GridWorldEnv( Env ) :
         return self.action_space.n
     
     @property
-    def cols(self):
+    def cols( self ) :
         return self.m_cols
     
     @property
-    def rows(self):
+    def rows( self ) :
         return self.m_rows
 
+    @property
+    def userRequestFinish( self ) :
+        # cache the state of the flag
+        _finishRequested = self.m_userRequestFinish
+        # reset variable
+        self.m_userRequestFinish = False
+
+        return _finishRequested
+
     ## Internal functionality ##################################################################################
+
+    def _isStrFloat( self, strval ) :
+        try :
+            float( strval )
+            return True
+        except ValueError :
+            return False
 
     def _pos2state( self, row, col ) :
         return row * self.m_cols + col
@@ -278,8 +327,22 @@ class GridWorldEnv( Env ) :
                 return False
 
             for j in range( self.m_cols ) :
+                # check if the user put rewards in layout. if so, store user rewards
+                if self._isStrFloat( _row[j] ) :
+                    _stateIndx = self._pos2state( i, j )
+                    self.m_gridRewardsLayout[_stateIndx] = float( _row[j] )
+                    self.m_gridLayout[i][j] = 'G' # treat cell as goal
+                    _row[j] = 'G'
+
+                # check if the user place a start position here
+                elif _row[j] == 'S' :
+                    _stateIndx = self._pos2state( i, j )
+                    self.m_gridStartLayout.append( _stateIndx )
+                    self.m_gridLayout[i][j] = '.' # treat cell as empty
+                    _row[j] = '.'
+
                 # validate characters in the layout
-                if _row[j] not in CELL_CHAR_MAP :
+                elif _row[j] not in CELL_CHAR_MAP :
                     print( 'ERROR> GridworldInitialization: Gridworld layout wrong character: ', _row[j] )
                     return False
                 # store the cell id
@@ -296,7 +359,14 @@ class GridWorldEnv( Env ) :
         self.m_transitionModel = { s : { a : [] for a in self.m_actions } for s in self.m_states }
 
         # compute initial state probability distribution (where it can be at the beginning)
-        self.m_isd = ( np.array( self.m_gridLayout ) == '.' ).astype( 'float64' ).ravel()
+        if len( self.m_gridStartLayout ) < 1 :
+            # if no start positions where given, create an appropiate start distribution
+            self.m_isd = ( np.array( self.m_gridLayout ) == '.' ).astype( 'float64' ).ravel()
+        else :
+            # if start positions were given, create a start distribution from this states
+            self.m_isd = np.zeros( self.m_rows * self.m_cols ).astype( 'float64' )
+            self.m_isd[self.m_gridStartLayout] = 1.0
+
         print( 'isd: ', self.m_isd )
         self.m_isd /= self.m_isd.sum()
 
@@ -305,9 +375,11 @@ class GridWorldEnv( Env ) :
                 for _action in self.m_actions :
                     # grab state id
                     _state = self._pos2state( _row, _col )
-                    # if in a termination state, just set the next states to that state
+                    # if in a termination state (or for a blocked state), just set 
+                    # the next states to that same state
                     if ( ( self.m_grid[_row, _col] == CELL_GOAL ) or
-                         ( self.m_grid[_row, _col] == CELL_HOLE ) ) :
+                         ( self.m_grid[_row, _col] == CELL_HOLE ) or 
+                         ( self.m_grid[_row, _col] == CELL_BLOCKED ) ) :
                         self.m_transitionModel[_state][_action].append( ( 1.0, _state, 0, True ) )
                     # if not, add all possible transitions using the transition function
                     else :
@@ -383,7 +455,11 @@ class GridWorldEnv( Env ) :
             _nstate = self._nextState( state, action )
             [ _nrow, _ncol ] = self._state2pos( _nstate )
             if self.m_grid[_nrow, _ncol] == CELL_GOAL :
-                return self.m_rewardAtGoal
+                # check if user place a custom reward here
+                if _nstate in self.m_gridRewardsLayout :
+                    return self.m_gridRewardsLayout[_nstate]
+                else :
+                    return self.m_rewardAtGoal
             elif self.m_grid[_nrow, _ncol] == CELL_HOLE :
                 return self.m_rewardAtHole
 
@@ -420,5 +496,7 @@ class GridWorldEnv( Env ) :
             self.m_userKey = 3
         else :
             self.m_userKey = -1
+            if event.key == 'escape' :
+                self.m_userRequestFinish = True
 
     ## #########################################################################################################

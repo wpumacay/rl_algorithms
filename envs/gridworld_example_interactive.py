@@ -3,11 +3,11 @@ from gridworld import *
 
 MAX_STEPS_PER_EPISODE = 1000
 
-_env = GridWorldEnv( BOOK_LAYOUT,
+_env = GridWorldEnv( DRLBOOTCAMP_CLIFF_LAYOUT,
                      noise = 0.0,
-                     rewardAtGoal = -1.0, 
-                     rewardAtHole = 0.0,
-                     rewardPerStep = -1.0,
+                     rewardAtGoal = 10.0, 
+                     rewardAtHole = -10.0,
+                     rewardPerStep = 0.0,
                      renderInteractive = True )
 
 
@@ -15,6 +15,9 @@ _state = _env.reset()
 _steps = 0
 
 while True :
+
+    if _env.userRequestFinish :
+        break
 
     _action = _env.getUserAction()
 

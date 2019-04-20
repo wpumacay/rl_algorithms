@@ -14,11 +14,11 @@ from dynprog_agent import *
 ##           [ '.', 'B', '.', '.' ],
 ##           [ '.', '.', '.', '.' ] ]
 
-_env = gridworld.GridWorldEnv( gridworld.BOOK_LAYOUT,
-                               noise = 0.0,
-                               rewardAtGoal = -1.0, 
-                               rewardAtHole = 0.0,
-                               rewardPerStep = -1.0 )
+_env = gridworld.GridWorldEnv( gridworld.DRLBOOTCAMP_CLIFF_LAYOUT,
+                               noise = 0.5,
+                               rewardAtGoal = 10.0, 
+                               rewardAtHole = -10.0,
+                               rewardPerStep = 0.0 )
 _state = _env.reset()
 
 ## # print some of the internals of the gridworld
@@ -40,6 +40,7 @@ def randomPolicy( env, state ) :
     return np.ones( env.nA ) / env.nA
 
 # the actual optimal policy (returns 1.0 probability for optimal action)
+# this policy corresponds to the gridworld.BOOK_LAYOUT grid layout
 def optimalPolicy( env, state ) :
     _nrows = env.rows
     _ncols = env.cols
@@ -75,14 +76,14 @@ def optimalPolicy( env, state ) :
     return _probs
 
 def testPolicy() :
-
+    # set interactive mode by passing renderInteractive = True to its constructor
     _state = _env.reset()
     _steps = 0
     
     while True :
     
-        ## _action = randomPolicy( _env, _state )
-        _aprobs = optimalPolicy( _env, _state )
+        _aprobs = randomPolicy( _env, _state )
+        ## _aprobs = optimalPolicy( _env, _state )
         _action = np.random.choice( _env.nA, p = _aprobs )
     
         _snext, _reward, _done, _ = _env.step( _action )
@@ -106,15 +107,51 @@ def testPolicy() :
     
         _ = input( 'Press any key to continue ...' )
 
-_gamma = 1.0
-_agent = PolicyEvalAgent( _env, _env.nS, _env.nA, _gamma, randomPolicy )
+## _gamma = 0.9
+## _agent = PolicyEvalAgent( _env, _env.nS, _env.nA, _gamma, randomPolicy )
+## 
+## _agent.run()
+## 
+## plt.ion()
+## gridworld_utils.plotVTableInGrid( _agent.v, _env.rows, _env.cols )
+## gridworld_utils.plotQTableInGrid( _agent.q, _env.rows, _env.cols )
+## 
+## _ = input( 'Press ENTER to continue ...' )
+
+# ##############################################################################
+
+# Policy Iteration #############################################################
+
+## _state = _env.reset()
+## 
+## _gamma = 0.9
+## _agent = PolicyIterationAgent( _env, _env.nS, _env.nA, _gamma )
+## 
+## _agent.run()
+## 
+## plt.close( 'all' )
+## plt.ion()
+## gridworld_utils.plotVTableInGrid( _agent.v, _env.rows, _env.cols )
+## gridworld_utils.plotQTableInGrid( _agent.q, _env.rows, _env.cols )
+## 
+## _ = input( 'Press ENTER to continue ...' )
+
+# ##############################################################################
+
+# Value Iteration ##############################################################
+
+_state = _env.reset()
+
+_gamma = 0.99
+_agent = ValueIterationAgent( _env, _env.nS, _env.nA, _gamma )
 
 _agent.run()
 
+plt.close( 'all' )
 plt.ion()
 gridworld_utils.plotVTableInGrid( _agent.v, _env.rows, _env.cols )
+gridworld_utils.plotQTableInGrid( _agent.q, _env.rows, _env.cols )
 
 _ = input( 'Press ENTER to continue ...' )
 
 # ##############################################################################
-
