@@ -28,7 +28,7 @@ class ITDAgentDiscrete( ITDAgent ) :
 
         self._startEpsilon = epsilon
         self._endEpsilon = 0.001
-        self._epsilonDecay = 0.999999
+        self._epsilonDecay = 0.9999
         self._epsilon = epsilon
 
         self._startAlpha = alpha
@@ -99,7 +99,8 @@ class TDPredictionAgent( ITDAgentDiscrete ) :
     def update( self, transition ) :
         _s, _a, _r, _snext, _done = transition
 
-        # compute td-target (estimate of the return)
+        # compute td-target (estimate of the return) similar to DQN part, in ...
+        # which at termination steps the estimated return is the reward for the step
         if _done :
             _tdTarget = _r
         else :
@@ -110,6 +111,40 @@ class TDPredictionAgent( ITDAgentDiscrete ) :
 
         # update the v-value towards this estimate
         self._vTable[_s] = self._vTable[_s] + self._alpha * ( _tdTarget - self._vTable[_s] )
+
+        # decay alpha (if given)
+        if self._alphaUseDecay :
+            self._alpha = max( self._endAlpha, self._alphaDecay * self._alpha )
+
+
+class TDSarsaAgent( ITDAgentDiscrete ) :
+
+    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False ) :
+        super( TDSarsaAgent, self ).__init__( nS, nA, gamma, epsilon, alpha, useAlphaDecay )
+
+    def update( self, transition ) :
+        _s, _a, _r, _snext, _anext, _done = transition
+
+        # compute td-target (estimate of the return) similar to DQN part, in ...
+        # which at termination steps the estimated return is the reward for the step
+        if _done :
+            _qTarget = _r
+        else :
+            _qTarget = _r + self._gamma * self._qTable[_snext][_anext]
+
+        ## # compute td-target (estimate of the return)
+        ## _qTarget = _r + self._gamma * self._qTable[_snext][_anext]
+
+        # update the q-value towards this estimate
+        self._qTable[_s][_a] = self._qTable[_s][_a] + self._alpha * ( _qTarget - self._qTable[_s][_a] )
+
+        # just for fun, update v-value function
+        if _done :
+            _vTarget = _r
+        else :
+            _vTarget = _r + self._gamma * self._vTable[_snext]
+
+        self._vTable[_s] = self._vTable[_s] + self._alpha * ( _vTarget - self._vTable[_s] )
 
         # decay alpha (if given)
         if self._alphaUseDecay :
