@@ -19,7 +19,7 @@ class ITDAgent( object ) :
 
 class ITDAgentDiscrete( ITDAgent ) :
 
-    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False ) :
+    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False, useEpsilonDecay = False ) :
         super( ITDAgentDiscrete, self ).__init__()
 
         self._nS = nS
@@ -27,15 +27,18 @@ class ITDAgentDiscrete( ITDAgent ) :
         self._gamma = gamma
 
         self._startEpsilon = epsilon
-        self._endEpsilon = 0.001
-        self._epsilonDecay = 0.9999
+        self._endEpsilon = 0.01
+        self._epsilonUseDecay = useEpsilonDecay
+        self._epsilonDecay = 0.99999
         self._epsilon = epsilon
 
         self._startAlpha = alpha
-        self._endAlpha = 0.001
+        self._endAlpha = 0.01
         self._alphaUseDecay = useAlphaDecay
-        self._alphaDecay = 0.9999
+        self._alphaDecay = 0.99999
         self._alpha = alpha
+
+        self._iepisode = 1
 
         self._vTable = np.zeros( ( nS ), dtype = np.float64 )
         self._qTable = np.zeros( ( nS, nA ), dtype = np.float64 )
@@ -69,8 +72,12 @@ class ITDAgentDiscrete( ITDAgent ) :
         # get the current distribution over action for the e-greedy policy
         _aprobs = self._epsGreedyActDistribution( state )
 
-        # decrease epsilon using a 1/t schedule
-        self._epsilon = max( self._endEpsilon, self._epsilon * self._epsilonDecay )
+        if self._epsilonUseDecay :
+            # decrease epsilon by a factor every time step
+            self._epsilon = max( self._endEpsilon, self._epsilon * self._epsilonDecay )
+        else :
+            # decrease epsilon using a 1/t schedule
+            self._epsilon = 1 / self._iepisode
 
         return np.random.choice( self._nA, p = _aprobs )
 
@@ -80,10 +87,13 @@ class ITDAgentDiscrete( ITDAgent ) :
         else :
             return self._epsGreedyAct( state )
 
+    def onEndEpisode( self ) :
+        self._iepisode += 1
+
     def reset( self ) :
         self._epsilon = self._startEpsilon
         self._alpha = self._startAlpha
-        self._iepisode = 0
+        self._iepisode = 1
 
     def V( self ) :
         return self._vTable
@@ -125,8 +135,8 @@ class TDPredictionAgent( ITDAgentDiscrete ) :
 
 class TDSarsaAgent( ITDAgentDiscrete ) :
 
-    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False ) :
-        super( TDSarsaAgent, self ).__init__( nS, nA, gamma, epsilon, alpha, useAlphaDecay )
+    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False, useEpsilonDecay = False ) :
+        super( TDSarsaAgent, self ).__init__( nS, nA, gamma, epsilon, alpha, useAlphaDecay, useEpsilonDecay )
 
     def update( self, transition ) :
         _s, _a, _r, _snext, _anext, _done = transition
@@ -145,12 +155,7 @@ class TDSarsaAgent( ITDAgentDiscrete ) :
         self._qTable[_s][_a] = self._qTable[_s][_a] + self._alpha * ( _qTarget - self._qTable[_s][_a] )
 
         # just for fun, update v-value function
-        if _done :
-            _vTarget = _r
-        else :
-            _vTarget = _r + self._gamma * self._vTable[_snext]
-
-        self._vTable[_s] = self._vTable[_s] + self._alpha * ( _vTarget - self._vTable[_s] )
+        self._vTable[_s] = np.max( self._qTable[_s] )
 
         # decay alpha (if given)
         if self._alphaUseDecay :
@@ -159,8 +164,8 @@ class TDSarsaAgent( ITDAgentDiscrete ) :
 
 class TDQlearningAgent( ITDAgentDiscrete ) :
 
-    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False ) :
-        super( TDQlearningAgent, self ).__init__( nS, nA, gamma, epsilon, alpha, useAlphaDecay )
+    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False, useEpsilonDecay = False ) :
+        super( TDQlearningAgent, self ).__init__( nS, nA, gamma, epsilon, alpha, useAlphaDecay, useEpsilonDecay )
 
     def update( self, transition ) :
         _s, _a, _r, _snext, _done = transition
@@ -179,12 +184,7 @@ class TDQlearningAgent( ITDAgentDiscrete ) :
         self._qTable[_s][_a] = self._qTable[_s][_a] + self._alpha * ( _qTarget - self._qTable[_s][_a] )
 
         # just for fun, update v-value function
-        if _done :
-            _vTarget = _r
-        else :
-            _vTarget = _r + self._gamma * self._vTable[_snext]
-
-        self._vTable[_s] = self._vTable[_s] + self._alpha * ( _vTarget - self._vTable[_s] )
+        self._vTable[_s] = np.max( self._qTable[_s] )
 
         # decay alpha (if given)
         if self._alphaUseDecay :
@@ -192,8 +192,8 @@ class TDQlearningAgent( ITDAgentDiscrete ) :
 
 class TDExpectedSarsaAgent( ITDAgentDiscrete ) :
 
-    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False ) :
-        super( TDExpectedSarsaAgent, self ).__init__( nS, nA, gamma, epsilon, alpha, useAlphaDecay )
+    def __init__( self, nS, nA, gamma, epsilon, alpha, useAlphaDecay = False, useEpsilonDecay = False ) :
+        super( TDExpectedSarsaAgent, self ).__init__( nS, nA, gamma, epsilon, alpha, useAlphaDecay, useEpsilonDecay )
 
     def update( self, transition ) :
         _s, _a, _r, _snext, _done = transition
@@ -213,12 +213,7 @@ class TDExpectedSarsaAgent( ITDAgentDiscrete ) :
         self._qTable[_s][_a] = self._qTable[_s][_a] + self._alpha * ( _qTarget - self._qTable[_s][_a] )
 
         # just for fun, update v-value function
-        if _done :
-            _vTarget = _r
-        else :
-            _vTarget = _r + self._gamma * self._vTable[_snext]
-
-        self._vTable[_s] = self._vTable[_s] + self._alpha * ( _vTarget - self._vTable[_s] )
+        self._vTable[_s] = np.max( self._qTable[_s] )
 
         # decay alpha (if given)
         if self._alphaUseDecay :
