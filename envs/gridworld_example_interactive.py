@@ -3,11 +3,11 @@ from gridworld import *
 
 MAX_STEPS_PER_EPISODE = 1000
 
-_env = GridWorldEnv( BOOK_LAYOUT,
+_env = GridWorldEnv( BOOK_CLIFF_LAYOUT,
                      noise = 0.0,
-                     rewardAtGoal = 10.0, 
-                     rewardAtHole = -10.0,
-                     rewardPerStep = 0.0,
+                     rewardAtGoal = 0.0, 
+                     rewardAtHole = -100.0,
+                     rewardPerStep = -1.0,
                      renderInteractive = True,
                      randomSeed = 1 )
 
