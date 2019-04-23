@@ -238,6 +238,8 @@ def drawGridEncodings( states, encodings, grid, dimensions = ( 0, 1 ), low = Non
     
     # If bounds (low, high) are specified, use them to set axis limits
     if low is not None and high is not None:
+        _low = low[dimensions]
+        _high = high[dimensions]
         _axes.set_xlim( _low[0], _high[0] )
         _axes.set_ylim( _low[1], _high[1] )
     else:
@@ -378,6 +380,8 @@ class QFunctionGridTable( object ) :
         _sEncoding = getEncoding( state, self._grid )
         _saEncoding = tuple( _sEncoding + (action,) )
 
+        ## set_trace()
+
         _qCurrent = self._table[_saEncoding]
 
         self._table[_saEncoding] += alpha * ( qTarget - _qCurrent )
@@ -449,6 +453,10 @@ def test_grid_space_2d() :
 
     drawGridEncodings( _samples, _encodedSamples, _grid )
 
+    print( _grid )
+    print( _samples )
+    print( _encodedSamples )
+
     # wait for user to terminate
     _ = input( 'Press any key to continue' )
 
@@ -458,6 +466,7 @@ def test_grid_space_2d_mountaincar() :
     import gym
 
     _env = gym.make( 'MountainCar-v0' )
+    _env.seed( 505 )
 
     _slow = _env.observation_space.low
     _shigh = _env.observation_space.high
@@ -465,13 +474,29 @@ def test_grid_space_2d_mountaincar() :
 
     _grid = createGrid( _slow, _shigh, _nbins )
 
-    _samples = [ _env.observation_space.sample() for _ in range( 10 ) ]
+    ## _samples = [ _env.observation_space.sample() for _ in range( 10 ) ]
+
+    _samples = np.array( [[ 6.629e-02, -4.457e-02],
+                          [-2.777e-01,  1.126e-02],
+                          [ 2.176e-01,  1.491e-02],
+                          [-8.069e-01, -6.276e-03],
+                          [ 3.820e-01, -1.082e-03],
+                          [ 8.801e-02, -1.938e-03],
+                          [ 7.539e-02, -2.604e-04],
+                          [ 3.202e-01, -4.279e-02],
+                          [ 1.920e-01,  6.640e-02],
+                          [ 3.522e-01,  3.926e-02] ] )
+
     _encodedSamples = [ getEncoding( sample, _grid ) for sample in _samples ]
 
-    _fig, _axes = drawGridEncodings( _samples, _encodedSamples, _grid )
+    _fig, _axes = drawGridEncodings( _samples, _encodedSamples, _grid, low = _slow, high = _shigh )
 
     _axes.set_xlabel( 'position' )
     _axes.set_ylabel( 'velocity' )
+
+    print( _grid )
+    print( _samples )
+    print( _encodedSamples )
 
     # wait for user to terminate
     _ = input( 'Press any key to continue' )

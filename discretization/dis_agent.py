@@ -112,6 +112,8 @@ class QLearningDiscretizationAgent( object ) :
                 _qValues = [ self._qfunction.eval( _s, _a ) for action in range( self._nA ) ]
                 _qTarget = _r + self._gamma * np.max( _qValues )
     
+            ## set_trace()
+
             # update the q-value towards this estimate
             self._qfunction.update( _s, _a, _qTarget, self._alpha )
 
