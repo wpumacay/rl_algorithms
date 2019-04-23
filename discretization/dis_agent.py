@@ -29,7 +29,7 @@ class QLearningDiscretizationAgent( object ) :
         self._startEpsilon = epsilon
         self._endEpsilon = 0.01
         self._epsilonUseDecay = useEpsilonDecay
-        self._epsilonDecay = 0.99999
+        self._epsilonDecay = 0.9995
         self._epsilon = epsilon
 
         # alpha hyperparameter and decay params
@@ -71,13 +71,6 @@ class QLearningDiscretizationAgent( object ) :
         # get the current distribution over action for the e-greedy policy
         _aprobs = self._epsGreedyActDistribution( state )
 
-        if self._epsilonUseDecay :
-            # decrease epsilon by a factor every time step
-            self._epsilon = max( self._endEpsilon, self._epsilon * self._epsilonDecay )
-        else :
-            # decrease epsilon using a 1/t schedule
-            self._epsilon = 1 / self._iepisode
-
         return np.random.choice( self._nA, p = _aprobs )
 
     def act( self, state, inference = False ) :
@@ -89,6 +82,17 @@ class QLearningDiscretizationAgent( object ) :
 
     def onEndEpisode( self ) :
         self._iepisode += 1
+
+        if self._epsilonUseDecay :
+            # decrease epsilon by a factor every time step
+            self._epsilon = max( self._endEpsilon, self._epsilon * self._epsilonDecay )
+        else :
+            # decrease epsilon using a 1/t schedule
+            self._epsilon = max( 1 / self._iepisode, self._endEpsilon )
+
+        # decay alpha (if given)
+        if self._alphaUseDecay :
+            self._alpha = max( self._endAlpha, self._alphaDecay * self._alpha )
 
     def reset( self ) :
         self._epsilon = self._startEpsilon
@@ -110,10 +114,6 @@ class QLearningDiscretizationAgent( object ) :
     
             # update the q-value towards this estimate
             self._qfunction.update( _s, _a, _qTarget, self._alpha )
-
-        # decay alpha (if given)
-        if self._alphaUseDecay :
-            self._alpha = max( self._endAlpha, self._alphaDecay * self._alpha )
 
     @property
     def qfunction( self ) :

@@ -3,7 +3,6 @@
 # https://github.com/udacity/deep-reinforcement-learning/tree/master/discretization
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from IPython.core.debugger import set_trace
 
@@ -32,7 +31,7 @@ def createGrid( sLow, sHigh, nBins ) :
 
     """
 
-    return [ np.linspace( sLow[dim], sHigh[dim], nBins[dim] + 1 ) for dim in range( len( nBins ) )[1:-1] ]
+    return [ np.linspace( sLow[dim], sHigh[dim], nBins[dim] + 1 )[1:-1] for dim in range( len( nBins ) ) ]
 
 def getEncoding( state, grid ) :
     """
@@ -138,6 +137,8 @@ def getTilesEncodings( state, tilings ) :
 
 # Visualization utils ##########################################################
 
+import matplotlib.pyplot as plt
+import matplotlib.collections as mc
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
@@ -190,8 +191,74 @@ def drawTilings( tilings, dimensions = (0, 1) ) :
 
     return _fig, _axes
 
+def drawGridEncodings( states, encodings, grid, dimensions = ( 0, 1 ), low = None, high = None ) :
+    """
+        Draws the grid partition of a state space along ...
+        with the encodings of a given set of states, all ...
+        over some given dimensions of the state space
 
-def drawEncodings( states, encodings, tilings, dimensions = (0, 1), low = None, high = None ) :
+        Parameters
+        ----------
+        states : Array of states(arrays of floats)
+            Array of states from the state space
+
+        encodings : Array of encodings
+            Array of encodings of the given states onto the grid
+
+        grid : Array of arrays
+            The grid in which the state space was partitioned
+
+        dimensions : tuple of ints
+            The dimensions of the state space to be visualized
+
+        low : array of floats
+            Low limits of the state space in the given dimensions
+
+        high : array of floats
+            High limits of the state space in the given dimensions
+    """
+
+    _fig, _axes = plt.subplots( figsize = (10, 10) )
+    
+    # easier indexing (numpy slicing)
+    states = np.array( states )
+    encodings = np.array( encodings )
+    grid = np.array( grid )
+    dimensions = np.array( dimensions, dtype = np.int64 )
+
+    # grab the components for only the dimensions given by the user
+    _statesOverDim = states[:,dimensions]
+    _encodingsOverDim = encodings[:,dimensions]
+    _gridOverDim = grid[dimensions,...]
+
+    # Show grid
+    _axes.xaxis.set_major_locator( plt.FixedLocator( _gridOverDim[0] ) )
+    _axes.yaxis.set_major_locator( plt.FixedLocator( _gridOverDim[1] ) )
+    _axes.grid( True )
+    
+    # If bounds (low, high) are specified, use them to set axis limits
+    if low is not None and high is not None:
+        _axes.set_xlim( _low[0], _high[0] )
+        _axes.set_ylim( _low[1], _high[1] )
+    else:
+        # Otherwise use first, last grid locations as low, high (for further mapping discretized samples)
+        _low = [ dimPartition[0] for dimPartition in _gridOverDim ]
+        _high = [ dimPartition[-1] for dimPartition in _gridOverDim ]
+
+    # Map each discretized sample (which is really an index) to the center of corresponding grid cell
+    _gridExtended = np.hstack( ( np.array( [_low] ).T, _gridOverDim, np.array( [_high] ).T ) )  # add low and high ends
+    _gridCenters = ( _gridExtended[:, 1:] + _gridExtended[:, :-1] ) / 2  # compute center of each grid cell
+    _locs = np.stack( _gridCenters[ i, _encodingsOverDim[:, i] ] for i in range( len( _gridOverDim ) ) ).T  # map discretized samples
+
+    _axes.plot( _statesOverDim[:, 0], _statesOverDim[:, 1], 'o' )  # plot original samples
+    _axes.plot( _locs[:, 0], _locs[:, 1], 's' )  # plot discretized samples in mapped locations
+    _axes.add_collection( mc.LineCollection( list( zip( _statesOverDim, _locs ) ), colors = 'orange' ) )  # add a line connecting each original-discretized sample
+    _axes.legend( ['original', 'discretized'] )
+
+    return _fig, _axes
+
+
+def drawTilingsEncodings( states, encodings, tilings, dimensions = (0, 1), low = None, high = None ) :
     """
         Draws the tilings of a state space along with ...
         the encodings of a given set of state, all over ...
@@ -365,6 +432,50 @@ class QFunctionTilingTable( object ) :
 
 ## Some tests for the tools ####################################################
 
+def test_grid_space_2d() :
+    plt.ion()
+
+    _grid = createGrid( [-1.0, -5.0], [1.0, 5.0], (10, 10) )
+    _samples = np.array( [ [-1.0 , -5.0],
+                           [-0.81, -4.1],
+                           [-0.8 , -4.0],
+                           [-0.5 ,  0.0],
+                           [ 0.2 , -1.9],
+                           [ 0.8 ,  4.0],
+                           [ 0.81,  4.1],
+                           [ 1.0 ,  5.0] ] )
+
+    _encodedSamples = [ getEncoding( sample, _grid ) for sample in _samples ]
+
+    drawGridEncodings( _samples, _encodedSamples, _grid )
+
+    # wait for user to terminate
+    _ = input( 'Press any key to continue' )
+
+def test_grid_space_2d_mountaincar() :
+    plt.ion()
+
+    import gym
+
+    _env = gym.make( 'MountainCar-v0' )
+
+    _slow = _env.observation_space.low
+    _shigh = _env.observation_space.high
+    _nbins = (10, 10)
+
+    _grid = createGrid( _slow, _shigh, _nbins )
+
+    _samples = [ _env.observation_space.sample() for _ in range( 10 ) ]
+    _encodedSamples = [ getEncoding( sample, _grid ) for sample in _samples ]
+
+    _fig, _axes = drawGridEncodings( _samples, _encodedSamples, _grid )
+
+    _axes.set_xlabel( 'position' )
+    _axes.set_ylabel( 'velocity' )
+
+    # wait for user to terminate
+    _ = input( 'Press any key to continue' )
+
 def test_tiling_space_2d() :
     plt.ion()
     # Tiling specs: [(<bins>, <offsets>), ...]
@@ -388,7 +499,7 @@ def test_tiling_space_2d() :
     _encodedSamples = [ getTilesEncodings( sample, _tilings ) for sample in _samples ]
 
     # draw the encodings
-    drawEncodings( _samples, _encodedSamples, _tilings )
+    drawTilingsEncodings( _samples, _encodedSamples, _tilings )
 
     # wait for user to terminate
     _ = input( 'Press any key to continue' )
@@ -428,5 +539,7 @@ def test_qfunctions_space_2d() :
     print( "[GET]    Q({}, {}) = {}".format( _samples[_s2], _a, _qfunctionTiling.eval( _samples[_s2], _a ) ) )
 
 if __name__ == '__main__' :
-    # test_tiling_space_2d()
-    test_qfunctions_space_2d()
+    ## test_grid_space_2d()
+    test_grid_space_2d_mountaincar()
+    ## test_tiling_space_2d()
+    ## test_qfunctions_space_2d()

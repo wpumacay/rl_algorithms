@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
+from IPython.core.debugger import set_trace
+
 import dis_utils
 import dis_agent
 
@@ -40,16 +42,22 @@ def experimentGridAgent( env ) :
                                            USE_EPSILON_DECAY )
 
     # start training
-    for iepisode in tqdm( range( NUM_EPISODES ) ) :
+    _progressbar = tqdm( range( 1, NUM_EPISODES + 1 ), desc = 'Training:', leave = True )
+    _maxAvgScore = -np.inf
+    _scores = []
+
+    for iepisode in _progressbar :
     
         _done = False
         _state = env.reset()
         _steps = 0
+        _return = 0.0
     
         while True :
     
             _action = _agent.act( _state, inference = False )
             _snext, _reward, _done, _ = env.step( _action )
+            _return += _reward
     
             _transition = ( _state, _action, _reward, _snext, _done )
     
@@ -65,6 +73,17 @@ def experimentGridAgent( env ) :
             _state = _snext
 
         _agent.onEndEpisode()
+        _scores.append( _return )
+
+        if len( _scores ) > 100 :
+            _avgScore = np.mean( _scores[-100:] )
+            if _avgScore > _maxAvgScore :
+                _maxAvgScore = _avgScore
+
+            # log results
+            if iepisode % 100 == 0 :
+                _progressbar.set_description( 'Max Avg. score: %d' % _maxAvgScore )
+                _progressbar.refresh()
 
     print( 'alpha: ', _agent.alpha )
     print( 'epsilon: ', _agent.epsilon )
