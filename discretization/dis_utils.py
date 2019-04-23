@@ -315,6 +315,12 @@ class QFunctionGridTable( object ) :
 
         self._table[_saEncoding] += alpha * ( qTarget - _qCurrent )
 
+    def save( self, filename ) :
+        pass
+
+    def load( self, filename ) :
+        pass
+
 
 class QFunctionTilingTable( object ) :
 
@@ -351,6 +357,11 @@ class QFunctionTilingTable( object ) :
         for _qtable in self._tables :
             _qtable.update( state, action, qTarget, alpha )
 
+    def save( self, filename ) :
+        pass
+
+    def load( self, filename ) :
+        pass
 
 ## Some tests for the tools ####################################################
 
