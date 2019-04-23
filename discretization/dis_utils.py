@@ -368,6 +368,10 @@ class QFunctionGridTable( object ) :
     def grid( self ) :
         return self._grid
 
+    @property
+    def table( self ) :
+        return self._table
+
     def eval( self, state, action ) :
         _sEncoding = getEncoding( state, self._grid )
         _saEncoding = tuple( _sEncoding + (action,))

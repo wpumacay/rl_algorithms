@@ -19,7 +19,7 @@ def experimentGridAgent( env ) :
     _nactions = env.action_space.n
 
     # number of bins to use for the discretization
-    _nbins = tuple( 10 for _ in range( len( _slow ) ) )
+    _nbins = tuple( 50 for _ in range( len( _slow ) ) )
 
     # define some hyperparameters
     GAMMA = 0.99
@@ -27,7 +27,7 @@ def experimentGridAgent( env ) :
     ALPHA = 0.02
     USE_EPSILON_DECAY = True
     USE_ALPHA_DECAY = False
-    NUM_EPISODES = 20000
+    NUM_EPISODES = 100000
 
     # create the grid-discretization agent
     _agent = dis_agent.QLearningGridAgent( _slow, 

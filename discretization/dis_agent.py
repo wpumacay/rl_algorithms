@@ -29,7 +29,7 @@ class QLearningDiscretizationAgent( object ) :
         self._startEpsilon = epsilon
         self._endEpsilon = 0.01
         self._epsilonUseDecay = useEpsilonDecay
-        self._epsilonDecay = 0.9995
+        self._epsilonDecay = 0.99995
         self._epsilon = epsilon
 
         # alpha hyperparameter and decay params
@@ -109,7 +109,7 @@ class QLearningDiscretizationAgent( object ) :
             if _done :
                 _qTarget = _r
             else :
-                _qValues = [ self._qfunction.eval( _s, _a ) for action in range( self._nA ) ]
+                _qValues = [ self._qfunction.eval( _snext, _a ) for action in range( self._nA ) ]
                 _qTarget = _r + self._gamma * np.max( _qValues )
     
             ## set_trace()
@@ -155,6 +155,10 @@ class QLearningGridAgent( QLearningDiscretizationAgent ) :
 
         # create the qfunction for this representation
         self._qfunction = utils.QFunctionGridTable( self._grid, self._nA )
+
+        # some logs to check everything is ok
+        print( "State space size:", tuple( len(splits) + 1 for splits in self._grid ) )
+        print( "Q table  size:", self._qfunction.table.shape )
 
 class QLearningTilingAgent( QLearningDiscretizationAgent ) :
 
