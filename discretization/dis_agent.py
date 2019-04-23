@@ -58,7 +58,7 @@ class QLearningDiscretizationAgent( object ) :
         _probs = np.ones( self._nA ) * self._epsilon / self._nA
 
         if self._qfunction :
-            _qValues = [ self._qfunction.eval( state, action ) for action in range( len( self._nA ) ) ]
+            _qValues = [ self._qfunction.eval( state, action ) for action in range( self._nA ) ]
             _greedyAction = np.argmax( _qValues )
             # greedy action has prob 1 - eps + eps/nA
             _probs[ _greedyAction ] += 1.0 - self._epsilon
@@ -82,7 +82,7 @@ class QLearningDiscretizationAgent( object ) :
 
     def act( self, state, inference = False ) :
         if inference :
-            _qValues = [ self._qfunction.eval( state, action ) for action in range( len( self._nA ) ) ]
+            _qValues = [ self._qfunction.eval( state, action ) for action in range( self._nA ) ]
             return np.argmax( _qValues )
         else :
             return self._epsGreedyAct( state )
@@ -105,11 +105,11 @@ class QLearningDiscretizationAgent( object ) :
             if _done :
                 _qTarget = _r
             else :
-                _qValues = [ self._qfunction.eval( state, action ) for action in range( len( self._nA ) ) ]
+                _qValues = [ self._qfunction.eval( _s, _a ) for action in range( self._nA ) ]
                 _qTarget = _r + self._gamma * np.max( _qValues )
     
             # update the q-value towards this estimate
-            self._qfunction.update( _s, _a, _qTarget )
+            self._qfunction.update( _s, _a, _qTarget, self._alpha )
 
         # decay alpha (if given)
         if self._alphaUseDecay :
