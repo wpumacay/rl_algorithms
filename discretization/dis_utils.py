@@ -9,10 +9,57 @@ from IPython.core.debugger import set_trace
 
 # Discretization utils #########################################################
 
+def createGrid( sLow, sHigh, nBins ) :
+    """
+        Creates a grid of a state space given ...
+        the min-max ranges for each of its dimension.
+
+        Parameters
+        ----------
+        sLow : array of floats
+            low limits of the state space (each dimension)
+
+        sHigh : array of floats
+            high limits of the state space (each dimension)
+
+        nBins : array of ints
+            number of bins to partition each dimension
+
+        Returns
+        -------
+        out : array of partitions for each dimension
+            A grid (as an array of arrays) representing the discretized grid
+
+    """
+
+    return [ np.linspace( sLow[dim], sHigh[dim], nBins[dim] + 1 ) for dim in range( len( nBins ) )[1:-1] ]
+
+def getEncoding( state, grid ) :
+    """
+        Returns the encoding of the given state in the ...
+        given a discretized grid of the state space.
+
+        Parameters
+        ----------
+        state : array of floats
+            Array representing the state to encode
+
+        grid : array of binnings(arrays as well)
+            A grid of the state space
+
+        Returns
+        -------
+        out : array of ints
+            Array representing the encoding of this state
+
+    """
+
+    return tuple( int( np.digitize( stateDim, binPartition ) ) for stateDim, binPartition in zip( state, grid ) )
+
 def createTilingGrid( sLow, sHigh, nBins, offsets ) :
     """
         Creates a tiling of a state space given ...
-        the min-max ranges for each its dimension.
+        the min-max ranges for each of its dimension.
 
         Parameters
         ----------
@@ -67,28 +114,6 @@ def createTilings( sLow, sHigh, tilingsSpecs ) :
     """
 
     return [ createTilingGrid( sLow, sHigh, tSpec[0], tSpec[1] ) for tSpec in tilingsSpecs ]
-
-def getEncoding( state, tiling ) :
-    """
-        Returns the encoding of the given state in the ...
-        given tiling of the state space.
-
-        Parameters
-        ----------
-        state : array of floats
-            Array representing the state to encode
-
-        tiling : array of binnings(arrays as well)
-            A tiling of the state space
-
-        Returns
-        -------
-        out : array of ints
-            Array representing the encoding of this state
-
-    """
-
-    return tuple( np.digitize( stateDim, binDim ) for stateDim, binDim in zip( state, tiling ) )
 
 def getTilesEncodings( state, tilings ) :
     """
@@ -156,7 +181,7 @@ def drawTilings( tilings, dimensions = (0, 1) ) :
 
         _legends.append( _l )
 
-    _axes.grid( 'off' )
+    _axes.grid( False )
     _axes.legend( _legends, 
                   ['Tiling #{}'.format(t) for t in range(len(_tilingsOverDim))],
                   facecolor='white',
@@ -248,9 +273,83 @@ def drawEncodings( states, encodings, tilings, dimensions = (0, 1), low = None, 
     _axes.margins( x = 0, y = 0 )  # remove unnecessary margins
     _axes.set_title( "Tile-encoded samples" )
 
-    set_trace()
+    ## set_trace()
 
     return _fig ,_axes
+
+# Custom tables used for Q functions ###########################################
+
+class QFunctionGridTable( object ) :
+
+    def __init__( self, grid, numActions ) :
+        super( QFunctionGridTable, self ).__init__()
+
+        # grid in which the state space was partitioned
+        self._grid = np.array( grid )
+
+        # number of actions (action space should be discrete)
+        self._nA = numActions
+
+        # table (np.ndarray) for the grid partition given
+        self._table = np.zeros( tuple( len(nbins) + 1 for nbins in self._grid ) + (self._nA,) )
+
+        ## set_trace()
+
+    @property
+    def grid( self ) :
+        return self._grid
+
+    def eval( self, state, action ) :
+        _sEncoding = getEncoding( state, self._grid )
+        _saEncoding = tuple( _sEncoding + (action,))
+
+        ## set_trace()
+
+        return self._table[_saEncoding]
+
+    def update( self, state, action, qTarget, alpha = 0.1 ) :
+        _sEncoding = getEncoding( state, self._grid )
+        _saEncoding = tuple( _sEncoding + (action,) )
+
+        _qCurrent = self._table[_saEncoding]
+
+        self._table[_saEncoding] += alpha * ( qTarget - _qCurrent )
+
+
+class QFunctionTilingTable( object ) :
+
+    def __init__( self, tilings, numActions ) :
+        super( QFunctionTilingTable, self ).__init__()
+
+        # tilings in which the state space was partitioned
+        self._tilings = tilings
+
+        # number of actions (action space should be discrete)
+        self._nA = numActions
+
+        # table (np.ndarray) for the grid partition given
+        self._tables = [ QFunctionGridTable( tiling, numActions ) for tiling in self._tilings ]
+
+    @property
+    def tilings( self ) :
+        return self._tilings
+
+    def eval( self, state, action ) :
+        _qvalue = 0.0
+
+        # for each encoding in each tiling, accumulate the qvalue it has
+        for _qtable in self._tables :
+            _qvalue += _qtable.eval( state, action )
+
+        # and take the average
+        _qvalue /= len( self._tilings )
+
+        return _qvalue
+
+    def update( self, state, action, qTarget, alpha = 0.1 ) :
+        # update the value of each tiling
+        for _qtable in self._tables :
+            _qtable.update( state, action, qTarget, alpha )
 
 
 ## Some tests for the tools ####################################################
@@ -283,5 +382,40 @@ def test_tiling_space_2d() :
     # wait for user to terminate
     _ = input( 'Press any key to continue' )
 
+def test_qfunctions_space_2d() :
+    plt.ion()
+    # Tiling specs: [(<bins>, <offsets>), ...]
+    _tilingSpecs = [ ( ( 10, 10 ), ( -0.066, -0.33 ) ),
+                     ( ( 10, 10 ), ( 0.0, 0.0 ) ),
+                     ( ( 10, 10 ), ( 0.066, 0.33 ) ) ]
+    _tilings = createTilings( [-1., -5.], [1., 5.], _tilingSpecs )
+
+    # Test with some sample values
+    _samples = [ (-1.2 , -5.1 ) ,
+                 (-0.75,  3.25) ,
+                 (-0.5 ,  0.0 ) ,
+                 ( 0.25, -1.9 ) ,
+                 ( 0.15, -1.75) ,
+                 ( 0.75,  2.5 ) ,
+                 ( 0.7 , -3.7 ) ,
+                 ( 1.0 ,  5.0 ) ]
+
+    _qfunctionTiling = QFunctionTilingTable( _tilings, 2 )
+    # some samples to take
+    _s1 = 3; _s2 = 4
+    # an action and a qTarget for which we will update its value
+    _a = 0
+    _qTarget = 1.0
+
+    # check value at sample = s1, action = a
+    print( "[GET]    Q({}, {}) = {}".format( _samples[_s1], _a, _qfunctionTiling.eval( _samples[_s1], _a ) ) )
+    # update value for sample with some common tile(s)    
+    print( "[UPDATE] Q({}, {}) = {}".format( _samples[_s2], _a, _qTarget ) )
+    _qfunctionTiling.update( _samples[_s2], _a, _qTarget )
+    # check value again, should be slightly updated
+    print( "[GET]    Q({}, {}) = {}".format( _samples[_s1], _a, _qfunctionTiling.eval( _samples[_s1], _a ) ) )
+    print( "[GET]    Q({}, {}) = {}".format( _samples[_s2], _a, _qfunctionTiling.eval( _samples[_s2], _a ) ) )
+
 if __name__ == '__main__' :
-    test_tiling_space_2d()
+    # test_tiling_space_2d()
+    test_qfunctions_space_2d()
