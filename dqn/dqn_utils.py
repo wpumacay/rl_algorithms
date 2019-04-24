@@ -61,11 +61,12 @@ class DqnAgentConfig( object ) :
         self.epsilonSteps   = 100000
 
         # learning rate and related parameters
-        self.lr                 = 0.00025
-        self.minibatchSize      = 32
-        self.learningStartsAt   = 50000
-        self.learningUpdateFreq = 4
-        self.learningMaxSteps   = 50000000
+        self.lr                         = 0.00025
+        self.minibatchSize              = 32
+        self.learningStartsAt           = 50000
+        self.learningUpdateFreq         = 4
+        self.learningUpdateTargetFreq   = 10000
+        self.learningMaxSteps           = 50000000
 
         # size of replay buffer
         self.replayBufferSize = 1000000
