@@ -2,7 +2,7 @@
 import numpy as np
 
 # our helpers
-import dqn_utils
+from . import dqn_utils
 
 # debugging helpers
 from IPython.core.debugger import set_trace
@@ -32,6 +32,8 @@ class IDqnAgent( object ) :
         self._epsStart      = agentConfig.epsilonStart
         self._epsEnd        = agentConfig.epsilonEnd
         self._epsSteps      = agentConfig.epsilonSteps
+        self._epsDecay      = agentConfig.epsilonDecay
+        self._epsSchedule   = agentConfig.epsilonSchedule
         self._epsilon       = self._epsStart
 
         # learning rate and related parameters
@@ -51,6 +53,9 @@ class IDqnAgent( object ) :
         # some counters used by the agent's logic
         self._istep = 0
         self._iepisode = 0
+
+        # copy some parameters from the agent config into the model config
+        modelConfig._lr = self._lr
 
         # create the model accordingly
         self._qnetwork_actor = modelBuilder( modelConfig )
@@ -102,10 +107,17 @@ class IDqnAgent( object ) :
         if _done :
             self._iepisode += 1
 
-        # update epsilon using linear schedule
-        _epsFactor = 1. - ( max( 0, self._istep - self._learningStartsAt ) / self._epsSteps )
-        _epsDelta = max( 0, ( self._epsStart - self._epsEnd ) * _epsFactor )
-        self._epsilon = self._epsEnd + _epsDelta
+        # check epsilon update schedule and update accordingly
+        if self._epsSchedule == 'linear' :
+            # update epsilon using linear schedule
+            _epsFactor = 1. - ( max( 0, self._istep - self._learningStartsAt ) / self._epsSteps )
+            _epsDelta = max( 0, ( self._epsStart - self._epsEnd ) * _epsFactor )
+            self._epsilon = self._epsEnd + _epsDelta
+
+        elif self._epsSchedule == 'geometric' :
+            # update epsilon with a geometric decay given by a decay factor
+            _epsFactor = self._epsDecay if self._istep >= self._learningStartsAt else 1.0
+            self._epsilon = max( self._epsEnd, self._epsilon * _epsFactor )
 
     def _egreedy( self, qvalues ) :
         """Get the action to take using eps-greedy over the given qvalues
@@ -174,4 +186,4 @@ class IDqnAgent( object ) :
                     self._qnetwork_target.eval( _nextStates )
 
         # make the learning call to the model (kind of like supervised setting)
-        self._qnetwork_actor.learn( _states, _qtargets )
+        self._qnetwork_actor.train( _states, _qtargets )

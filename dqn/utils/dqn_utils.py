@@ -1,8 +1,10 @@
 
 import random
 import numpy as np
+
 from collections import namedtuple
 from collections import deque
+
 from IPython.core.debugger import set_trace
 
 # Helper functionality for the dqn agent #######################################
@@ -56,9 +58,11 @@ class DqnAgentConfig( object ) :
         self.nActions = 18
 
         # parameters for linear schedule of eps
-        self.epsilonStart   = 1.0
-        self.epsilonEnd     = 0.1
-        self.epsilonSteps   = 100000
+        self.epsilonStart       = 1.0
+        self.epsilonEnd         = 0.1
+        self.epsilonSteps       = 100000
+        self.epsilonDecay       = 0.995
+        self.epsilonSchedule    = 'linear'
 
         # learning rate and related parameters
         self.lr                         = 0.00025
@@ -88,26 +92,21 @@ class DqnModelConfig( object ) :
     def __init__( self ) :
         super( DqnModelConfig, self ).__init__()
 
-        # type of model to be used (either 'mlp' or 'cnn')
-        self.type = 'cnn'
-
         # shape of the input tensor for the model
         self.inputShape = ( 4, 84, 84 )
         self.outputShape = ( 18 )
-        self.layers = [ { 'type' : 'conv', 'ksize' : 8, 'kstride' : 4, 'nfilters' : 32, 'activation' : 'relu' },
-                        { 'type' : 'conv', 'ksize' : 4, 'kstride' : 2, 'nfilters' : 64, 'activation' : 'relu' },
-                        { 'type' : 'conv', 'ksize' : 3, 'kstride' : 1, 'nfilters' : 64, 'activation' : 'relu' },
+        self.layers = [ { 'type' : 'conv2d', 'ksize' : 8, 'kstride' : 4, 'nfilters' : 32, 'activation' : 'relu' },
+                        { 'type' : 'conv2d', 'ksize' : 4, 'kstride' : 2, 'nfilters' : 64, 'activation' : 'relu' },
+                        { 'type' : 'conv2d', 'ksize' : 3, 'kstride' : 1, 'nfilters' : 64, 'activation' : 'relu' },
+                        { 'type' : 'flatten' },
                         { 'type' : 'fc', 'units' : 512, 'activation' : 'relu' },
                         { 'type' : 'fc', 'units' : 18, 'activation' : 'relu' } ]
+
+        # parameters copied from the agent configuration
+        self._lr = 0.00025
 
     def save( self, filename ) :
         pass
 
     def load( self, filename ) :
         pass
-
-
-
-# Plotting helpers #############################################################
-
-import matplotlib.pyplot as plt
