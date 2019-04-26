@@ -20,7 +20,8 @@ class DqnLunarLanderAgent( IDqnAgent ) :
         """
         return rawState.copy()
 
-DqnAgentBuilder = lambda config : DqnLunarLanderAgent( config )
+DqnAgentBuilder = lambda agentConfig, modelConfig, modelBuilder : \
+                                DqnLunarLanderAgent( agentConfig, modelConfig, modelBuilder )
 
 AGENT_CONFIG = DqnAgentConfig()
 AGENT_CONFIG.stateDim                   = 8
@@ -41,8 +42,8 @@ AGENT_CONFIG.tau                        = 0.001
 AGENT_CONFIG.seed                       = 0
 
 MODEL_CONFIG = DqnModelConfig()
-MODEL_CONFIG.inputShape = ( 8 ) # rank-1 tensor ( 8-vector )
-MODEL_CONFIG.outputShape = ( 4 ) # rank-1 tensor ( 4-vector, 1 qvalue per action )
+MODEL_CONFIG.inputShape = ( 8, ) # rank-1 tensor ( 8-vector )
+MODEL_CONFIG.outputShape = ( 4, ) # rank-1 tensor ( 4-vector, 1 qvalue per action )
 MODEL_CONFIG.layers = [ { 'name': 'fc1', 'type' : 'fc', 'units' : 128, 'activation' : 'relu' },
                         { 'name': 'fc2', 'type' : 'fc', 'units' : 64, 'activation' : 'relu' },
                         { 'name': 'fc3', 'type' : 'fc', 'units' : 16, 'activation' : 'relu' },

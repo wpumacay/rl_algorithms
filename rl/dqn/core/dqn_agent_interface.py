@@ -22,7 +22,7 @@ class IDqnAgent( object ) :
         super( IDqnAgent, self ).__init__()
 
         # environment state and action spaces info
-        self._stateDim = agentConfig.stateDims
+        self._stateDim = agentConfig.stateDim
         self._nActions = agentConfig.nActions
 
         # random seed
@@ -93,7 +93,8 @@ class IDqnAgent( object ) :
 
         # check if can do a training step
         if self._istep > self._learningStartsAt and \
-           self._istep % self._learningUpdateFreq == 0 :
+           self._istep % self._learningUpdateFreq == 0 and \
+           len( self._rbuffer ) > self._minibatchSize :
             self._learn()
 
         # update the weights of the target network (every update_target steps)
@@ -185,7 +186,8 @@ class IDqnAgent( object ) :
         #         Basically the targets are like training data from a 'dataset'.
 
         _qtargets = _rewards + ( 1 - _dones ) * self._gamma * \
-                    self._qnetwork_target.eval( _nextStates )
+                    np.max( self._qnetwork_target.eval( _nextStates ), 1 )
+        _qtargets = _qtargets.astype( np.float32 )
 
         # make the learning call to the model (kind of like supervised setting)
-        self._qnetwork_actor.train( _states, _qtargets )
+        self._qnetwork_actor.train( _states, _actions, _qtargets )

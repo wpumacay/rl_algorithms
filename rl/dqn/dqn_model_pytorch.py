@@ -67,7 +67,7 @@ class NetworkPytorchGeneric( nn.Module ) :
 
 class NetworkTestLunarLander( nn.Module ) :
 
-    def __init__( self, inputShape, outputShape ) :
+    def __init__( self, inputShape, outputShape, layersDefs ) :
         super( NetworkTestLunarLander, self ).__init__()
 
         # lunar lander has a 8-vector as an observation (rank-1 tensor)
@@ -107,18 +107,18 @@ class DqnModelPytorch( IDqnModel ) :
     def __init__( self, modelConfig ) :
         super( DqnModelPytorch, self ).__init__( modelConfig )
 
-        self._nnetwork = None
-        self._optimizer = None
+    def build( self ) :
+        self._device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
+
         self._lossFcn = nn.MSELoss()
         self._losses = deque( maxlen = 100 )
 
-        self._device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
-
-    def build( self ) :
         # @TEST: creating a custom fc network for lunar lander
         self._nnetwork = NetworkTestLunarLander( self._inputShape,
                                                  self._outputShape,
                                                  self._layersDefs )
+
+        self._nnetwork.to( self._device )
 
         # @TODO: Add optimizer options to modelconfig
         self._optimizer = optim.Adam( self._nnetwork.parameters(), lr = self._lr )
@@ -126,19 +126,22 @@ class DqnModelPytorch( IDqnModel ) :
     def eval( self, state, inference = False ) :
         self._nnetwork.eval()
 
-        return self._nnetwork.forward( state )
+        _xx = torch.from_numpy( state ).to( self._device )
 
-    def train( self, states, targets ) :
+        return self._nnetwork.forward( _xx ).cpu().detach().numpy()
+
+    def train( self, states, actions, targets ) :
         self._nnetwork.train()
         
+        _aa = torch.from_numpy( actions ).unsqueeze( 1 ).to( self._device )
         _xx = torch.from_numpy( states ).to( self._device )
-        _yy = torch.from_numpy( targets ).to( self._device )
+        _yy = torch.from_numpy( targets ).float().unsqueeze( 1 ).to( self._device )
 
         # reset the gradients buffer
         self._optimizer.zero_grad()
 
         # do forward pass to compute q-target predictions
-        _yyhat = self._nnetwork.forward( _xx )
+        _yyhat = self._nnetwork.forward( _xx ).gather( 1, _aa )
 
         # and compute loss and gradients
         _loss = self._lossFcn( _yyhat, _yy )
@@ -151,7 +154,7 @@ class DqnModelPytorch( IDqnModel ) :
         self._losses.append( _loss.item() )
 
     def clone( self, other, tau = 1.0 ) :
-        self._nnetwork.clone( other, tau )
+        self._nnetwork.clone( other._nnetwork, tau )
 
     def save( self, filename ) :
         pass

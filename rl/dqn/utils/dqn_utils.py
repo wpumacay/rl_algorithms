@@ -25,21 +25,21 @@ class ReplayBuffer( object ) :
         self._memory = deque( maxlen = bufferSize )
         self._randomState = random.seed( randomSeed )
 
-    def add( self, state, action, reward, nextState, endFlag ) :
+    def add( self, state, action, nextState, reward, endFlag ) :
         # create a experience object from the arguments
         _expObj = self._experience( state, action, reward, nextState, endFlag )
         # and add it to the deque memory
         self._memory.append( _expObj )
 
-    def sample( self ) :
+    def sample( self, batchSize ) :
         # grab a batch from the deque memory
-        _expBatch = random.sample( self._memory, self._batchSize )
+        _expBatch = random.sample( self._memory, batchSize )
 
         # stack each experience component along batch axis
-        _states = np.stack( [ _exp.state for _exp in _expBatch if _exp is not None ] )
+        _states = np.stack( [ _exp.state for _exp in _expBatch if _exp is not None ] ).astype( np.float32 )
         _actions = np.stack( [ _exp.action for _exp in _expBatch if _exp is not None ] )
-        _rewards = np.stack( [ _exp.reward for _exp in _expBatch if _exp is not None ] )
-        _nextStates = np.stack( [ _exp.nextState for _exp in _expBatch if _exp is not None ] )
+        _rewards = np.stack( [ _exp.reward for _exp in _expBatch if _exp is not None ] ).astype( np.float32 )
+        _nextStates = np.stack( [ _exp.nextState for _exp in _expBatch if _exp is not None ] ).astype( np.float32 )
         _endFlags = np.stack( [ _exp.endFlag for _exp in _expBatch if _exp is not None ] ).astype( np.uint8 )
 
         return _states, _actions, _rewards, _nextStates, _endFlags
@@ -97,7 +97,7 @@ class DqnModelConfig( object ) :
 
         # shape of the input tensor for the model
         self.inputShape = ( 4, 84, 84 )
-        self.outputShape = ( 18 )
+        self.outputShape = ( 18, )
         self.layers = [ { 'name' : 'conv1' , 'type' : 'conv2d', 'ksize' : 8, 'kstride' : 4, 'nfilters' : 32, 'activation' : 'relu' },
                         { 'name' : 'conv2' , 'type' : 'conv2d', 'ksize' : 4, 'kstride' : 2, 'nfilters' : 64, 'activation' : 'relu' },
                         { 'name' : 'conv3' , 'type' : 'conv2d', 'ksize' : 3, 'kstride' : 1, 'nfilters' : 64, 'activation' : 'relu' },

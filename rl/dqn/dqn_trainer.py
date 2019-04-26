@@ -12,7 +12,7 @@ from collections import deque
 import rl.dqn.dqn_lunarLander as dqn
 
 # import model builder functionality (pytorch as backend)
-import rl.dqn.dqn_models_pytorch as models
+import rl.dqn.dqn_model_pytorch as model
 
 from IPython.core.debugger import set_trace
 
@@ -23,7 +23,7 @@ def experiment() :
 
     _agent = dqn.DqnAgentBuilder( dqn.AGENT_CONFIG,
                                   dqn.MODEL_CONFIG,
-                                  models.DqnModelBuilder )
+                                  model.DqnModelBuilder )
 
     _env = gym.make( 'LunarLander-v2' )
 
@@ -65,3 +65,8 @@ def experiment() :
             if iepisode % 100 == 0 :
                 _progressbar.set_description( 'Training> Max Avg. score: %d' % _maxAvgScore )
                 _progressbar.refresh()
+
+
+
+if __name__ == '__main__' :
+    experiment()
