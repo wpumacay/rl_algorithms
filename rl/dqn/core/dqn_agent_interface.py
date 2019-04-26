@@ -113,6 +113,8 @@ class IDqnAgent( object ) :
         # and the episode counter if we finished an episode
         if _done :
             self._iepisode += 1
+            self._currState = None
+            self._nextState = None
 
         # check epsilon update schedule and update accordingly
         if self._epsSchedule == 'linear' :
@@ -170,7 +172,7 @@ class IDqnAgent( object ) :
 
         # get a minibatch from the replay buffer
         _minibatch = self._rbuffer.sample( self._minibatchSize )
-        _states, _actions, _rewards, _nextStates, _dones = _minibatch
+        _states, _actions, _nextStates, _rewards, _dones = _minibatch
 
         # compute targets (in a vectorized way). Recall:
         #               

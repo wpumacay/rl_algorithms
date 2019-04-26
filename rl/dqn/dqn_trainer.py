@@ -37,10 +37,10 @@ def experiment() :
                                          model.DqnModelBuilder )
 
     ## _env = gym.make( 'LunarLander-v2' )
-    _env = gridworld.GridWorldEnv( gridworld.BOOK_LAYOUT,
+    _env = gridworld.GridWorldEnv( gridworld.BOOK_LAYOUT, # DEFAULT_LAYOUT
                                    noise = 0.0,
-                                   rewardAtGoal = -1.0,
-                                   rewardAtHole = -1.0,
+                                   rewardAtGoal = -1.0, # 10.0
+                                   rewardAtHole = -1.0, # -10.0
                                    rewardPerStep = -1.0,
                                    renderInteractive = False,
                                    randomSeed = dqn.AGENT_CONFIG.seed )

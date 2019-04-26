@@ -44,7 +44,7 @@ class ReplayBuffer( object ) :
         _nextStates = np.stack( [ _exp.nextState for _exp in _expBatch if _exp is not None ] )
         _endFlags = np.stack( [ _exp.endFlag for _exp in _expBatch if _exp is not None ] ).astype( np.uint8 )
 
-        return _states, _actions, _rewards, _nextStates, _endFlags
+        return _states, _actions, _nextStates, _rewards, _endFlags
 
     def __len__( self ) :
         return len( self._memory )
