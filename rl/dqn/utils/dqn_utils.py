@@ -23,7 +23,9 @@ class ReplayBuffer( object ) :
                                                        'endFlag' ] )
 
         self._memory = deque( maxlen = bufferSize )
-        self._randomState = random.seed( randomSeed )
+
+        # seed random generator (@TODO: What is the behav. with multi-agents?)
+        random.seed( randomSeed )
 
     def add( self, state, action, nextState, reward, endFlag ) :
         # create a experience object from the arguments
@@ -36,10 +38,10 @@ class ReplayBuffer( object ) :
         _expBatch = random.sample( self._memory, batchSize )
 
         # stack each experience component along batch axis
-        _states = np.stack( [ _exp.state for _exp in _expBatch if _exp is not None ] ).astype( np.float32 )
+        _states = np.stack( [ _exp.state for _exp in _expBatch if _exp is not None ] )
         _actions = np.stack( [ _exp.action for _exp in _expBatch if _exp is not None ] )
-        _rewards = np.stack( [ _exp.reward for _exp in _expBatch if _exp is not None ] ).astype( np.float32 )
-        _nextStates = np.stack( [ _exp.nextState for _exp in _expBatch if _exp is not None ] ).astype( np.float32 )
+        _rewards = np.stack( [ _exp.reward for _exp in _expBatch if _exp is not None ] )
+        _nextStates = np.stack( [ _exp.nextState for _exp in _expBatch if _exp is not None ] )
         _endFlags = np.stack( [ _exp.endFlag for _exp in _expBatch if _exp is not None ] ).astype( np.uint8 )
 
         return _states, _actions, _rewards, _nextStates, _endFlags

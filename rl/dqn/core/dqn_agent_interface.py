@@ -27,6 +27,7 @@ class IDqnAgent( object ) :
 
         # random seed
         self._seed = agentConfig.seed
+        np.random.seed( self._seed )
 
         # parameters for linear schedule of eps
         self._epsStart      = agentConfig.epsilonStart
@@ -61,9 +62,9 @@ class IDqnAgent( object ) :
         modelConfig._lr = self._lr
 
         # create the model accordingly
-        self._qnetwork_actor = modelBuilder( 'actor_network', modelConfig )
-        self._qnetwork_target = modelBuilder( 'target_network', modelConfig )
-        self._qnetwork_target.clone( self._qnetwork_actor, tau = 1.0 )
+        self._qmodel_actor = modelBuilder( 'actor_model', modelConfig )
+        self._qmodel_target = modelBuilder( 'target_model', modelConfig )
+        self._qmodel_target.clone( self._qmodel_actor, tau = 1.0 )
 
         # replay buffer
         self._rbuffer = dqn_utils.ReplayBuffer( self._replayBufferSize,
@@ -76,7 +77,7 @@ class IDqnAgent( object ) :
         self._printConfig();
 
     def act( self, state, inference = False ) :
-        _qvalues = self._qnetwork_actor.eval( state )
+        _qvalues = self._qmodel_actor.eval( state )
 
         if inference :
             return np.argmax( _qvalues )
@@ -96,13 +97,13 @@ class IDqnAgent( object ) :
         # check if can do a training step
         if self._istep > self._learningStartsAt and \
            self._istep % self._learningUpdateFreq == 0 and \
-           len( self._rbuffer ) > self._minibatchSize :
+           len( self._rbuffer ) >= self._minibatchSize :
             self._learn()
 
-        # update the weights of the target network (every update_target steps)
+        # update the parameters of the target model (every update_target steps)
         if self._istep > self._learningStartsAt and \
            self._istep % self._learningUpdateTargetFreq == 0 :
-           self._qnetwork_target.clone( self._qnetwork_actor, tau = self._tau )
+           self._qmodel_target.clone( self._qmodel_actor, tau = self._tau )
 
         # save next state (where we currently are in the environment) as current
         self._currState = self._nextState
@@ -121,9 +122,10 @@ class IDqnAgent( object ) :
             self._epsilon = self._epsEnd + _epsDelta
 
         elif self._epsSchedule == 'geometric' :
-            # update epsilon with a geometric decay given by a decay factor
-            _epsFactor = self._epsDecay if self._istep >= self._learningStartsAt else 1.0
-            self._epsilon = max( self._epsEnd, self._epsilon * _epsFactor )
+            if _done :
+                # update epsilon with a geometric decay given by a decay factor
+                _epsFactor = self._epsDecay if self._istep >= self._learningStartsAt else 1.0
+                self._epsilon = max( self._epsEnd, self._epsilon * _epsFactor )
 
     def _egreedy( self, qvalues ) :
         """Get the action to take using eps-greedy over the given qvalues
@@ -180,7 +182,7 @@ class IDqnAgent( object ) :
         #
         # qtargets = _rewards + (1 - terminals) * gamma * max(Q(nextStates), batchAxis)
         #
-        # Notes: 
+        # Notes (for nnetwork models): 
         #       * Just to clarify, we are assuming that in this call to Q
         #         the targets generated are not dependent of the weights
         #         of the network (should not take into consideration gradients 
@@ -188,11 +190,16 @@ class IDqnAgent( object ) :
         #         Basically the targets are like training data from a 'dataset'.
 
         _qtargets = _rewards + ( 1 - _dones ) * self._gamma * \
-                    np.max( self._qnetwork_target.eval( _nextStates ), 1 )
+                    np.max( self._qmodel_target.eval( _nextStates ), 1 )
         _qtargets = _qtargets.astype( np.float32 )
 
         # make the learning call to the model (kind of like supervised setting)
-        self._qnetwork_actor.train( _states, _actions, _qtargets )
+        self._qmodel_actor.train( _states, _actions, _qtargets )
+
+    @property
+    def epsilon( self ) :
+        return self._epsilon
+    
 
     def _printConfig( self ) :
         print( '#############################################################' )
@@ -212,11 +219,11 @@ class IDqnAgent( object ) :
         print( 'learning rate                                   : ', self._lr )
         print( 'minibatch size                                  : ', self._minibatchSize )
         print( 'learning starting step for training             : ', self._learningStartsAt )
-        print( 'learning updateFreq (training actor-network)    : ', self._learningUpdateFreq )
-        print( 'learning updateTargetFreq (target-network)      : ', self._learningUpdateTargetFreq )
+        print( 'learning updateFreq (training actor-model)      : ', self._learningUpdateFreq )
+        print( 'learning updateTargetFreq (target-model)        : ', self._learningUpdateTargetFreq )
         print( 'learning max steps                              : ', self._learningMaxSteps )
         print( 'replay buffer size                              : ', self._replayBufferSize )
         print( 'gamma (discount factor)                         : ', self._gamma )
-        print( 'tau (target network soft-updates)               : ', self._tau )
+        print( 'tau (target model soft-updates)                 : ', self._tau )
 
         print( '#############################################################' )
