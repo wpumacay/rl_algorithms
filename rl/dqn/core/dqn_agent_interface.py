@@ -2,7 +2,7 @@
 import numpy as np
 
 # our helpers
-from . import dqn_utils
+from rl.dqn.utils import dqn_utils
 
 # debugging helpers
 from IPython.core.debugger import set_trace
@@ -50,6 +50,9 @@ class IDqnAgent( object ) :
         # discount factor gamma
         self._gamma = agentConfig.discount
 
+        # tau factor for soft-updates
+        self._tau = agentConfig.tau
+
         # some counters used by the agent's logic
         self._istep = 0
         self._iepisode = 0
@@ -59,7 +62,8 @@ class IDqnAgent( object ) :
 
         # create the model accordingly
         self._qnetwork_actor = modelBuilder( modelConfig )
-        self._qnetwork_target = self._qnetwork_actor.clone()
+        self._qnetwork_target = modelBuilder( modelConfig )
+        self._qnetwork_target.clone( self._qnetwork_actor, tau = 1.0 )
 
         # replay buffer
         self._rbuffer = dqn_utils.ReplayBuffer( self._replayBufferSize,
@@ -68,7 +72,6 @@ class IDqnAgent( object ) :
         # states (current and next) for the model representation
         self._currState = None
         self._nextState = None
-
 
     def act( self, state, inference = False ) :
         _qvalues = self._qnetwork_actor.eval( state )
@@ -96,7 +99,7 @@ class IDqnAgent( object ) :
         # update the weights of the target network (every update_target steps)
         if self._istep > self._learningStartsAt and \
            self._istep % self._learningUpdateTargetFreq == 0 :
-           self._qnetwork_target.clone( self._qnetwork_actor )
+           self._qnetwork_target.clone( self._qnetwork_actor, tau = self._tau )
 
         # save next state (where we currently are in the environment) as current
         self._currState = self._nextState
@@ -154,7 +157,6 @@ class IDqnAgent( object ) :
 
         raise NotImplementedError( 'IDqnAgent::_preprocess> virtual method' )
         
-
     def _learn( self ) :
         """Makes a learning step using the DQN algorithm from Mnih et. al.
            https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf

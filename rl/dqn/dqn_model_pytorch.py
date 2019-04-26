@@ -1,5 +1,5 @@
 
-from core.dqn_model_interface import IDqnModel
+from rl.dqn.core.dqn_model_interface import IDqnModel
 
 import numpy as np
 
@@ -61,6 +61,10 @@ class NetworkPytorchGeneric( nn.Module ) :
 
         return x
 
+    def clone( self, other, tau ) :
+        for _localParams, _otherParams in zip( self.parameters(), other.parameters() ) :
+            _localParams.data.copy_( tau * _localParams.data + ( 1.0 - tau ) * _otherParams.data )
+
 class NetworkTestLunarLander( nn.Module ) :
 
     def __init__( self, inputShape, outputShape ) :
@@ -93,6 +97,10 @@ class NetworkTestLunarLander( nn.Module ) :
         self.out = self.fc4( self.h3 )
 
         return self.out
+
+    def clone( self, other, tau ) :
+        for _localParams, _otherParams in zip( self.parameters(), other.parameters() ) :
+            _localParams.data.copy_( tau * _localParams.data + ( 1.0 - tau ) * _otherParams.data )
 
 class DqnModelPytorch( IDqnModel ) :
 
@@ -141,5 +149,14 @@ class DqnModelPytorch( IDqnModel ) :
 
         # grab loss for later statistics
         self._losses.append( _loss.item() )
+
+    def clone( self, other, tau = 1.0 ) :
+        self._nnetwork.clone( other, tau )
+
+    def save( self, filename ) :
+        pass
+
+    def load( self, filename ) :
+        pass
 
 DqnModelBuilder = lambda config : DqnModelPytorch( config )

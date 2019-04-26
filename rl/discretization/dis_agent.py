@@ -29,7 +29,7 @@ class QLearningDiscretizationAgent( object ) :
         self._startEpsilon = epsilon
         self._endEpsilon = 0.01
         self._epsilonUseDecay = useEpsilonDecay
-        self._epsilonDecay = 0.99995
+        self._epsilonDecay = 0.9995
         self._epsilon = epsilon
 
         # alpha hyperparameter and decay params

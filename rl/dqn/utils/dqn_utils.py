@@ -51,7 +51,7 @@ class ReplayBuffer( object ) :
 class DqnAgentConfig( object ) :
 
     def __init__( self ) :
-        super( DqnConfig, self ).__init__()
+        super( DqnAgentConfig, self ).__init__()
 
         # environment state and action info
         self.stateDim = 7056
@@ -78,6 +78,9 @@ class DqnAgentConfig( object ) :
         # discount factor
         self.discount = 0.99
 
+        # tau factor to control interpolation in target-network params
+        self.tau = 1.0 # 1.0 means just copy as is from actor to target network
+
         # random seed
         self.seed = 1
 
@@ -95,12 +98,12 @@ class DqnModelConfig( object ) :
         # shape of the input tensor for the model
         self.inputShape = ( 4, 84, 84 )
         self.outputShape = ( 18 )
-        self.layers = [ { 'type' : 'conv2d', 'ksize' : 8, 'kstride' : 4, 'nfilters' : 32, 'activation' : 'relu' },
-                        { 'type' : 'conv2d', 'ksize' : 4, 'kstride' : 2, 'nfilters' : 64, 'activation' : 'relu' },
-                        { 'type' : 'conv2d', 'ksize' : 3, 'kstride' : 1, 'nfilters' : 64, 'activation' : 'relu' },
-                        { 'type' : 'flatten' },
-                        { 'type' : 'fc', 'units' : 512, 'activation' : 'relu' },
-                        { 'type' : 'fc', 'units' : 18, 'activation' : 'relu' } ]
+        self.layers = [ { 'name' : 'conv1' , 'type' : 'conv2d', 'ksize' : 8, 'kstride' : 4, 'nfilters' : 32, 'activation' : 'relu' },
+                        { 'name' : 'conv2' , 'type' : 'conv2d', 'ksize' : 4, 'kstride' : 2, 'nfilters' : 64, 'activation' : 'relu' },
+                        { 'name' : 'conv3' , 'type' : 'conv2d', 'ksize' : 3, 'kstride' : 1, 'nfilters' : 64, 'activation' : 'relu' },
+                        { 'name' : 'flatten' , 'type' : 'flatten' },
+                        { 'name' : 'fc1' , 'type' : 'fc', 'units' : 512, 'activation' : 'relu' },
+                        { 'name' : 'fc2' , 'type' : 'fc', 'units' : 18, 'activation' : 'relu' } ]
 
         # parameters copied from the agent configuration
         self._lr = 0.00025

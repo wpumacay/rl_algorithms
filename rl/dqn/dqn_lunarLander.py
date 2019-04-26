@@ -1,7 +1,7 @@
 
-from core.dqn_agent_interface import IDqnAgent
-from utils.dqn_utils import DqnAgentConfig 
-from utils.dqn_utils import DqnModelConfig
+from rl.dqn.core.dqn_agent_interface import IDqnAgent
+from rl.dqn.utils.dqn_utils import DqnAgentConfig 
+from rl.dqn.utils.dqn_utils import DqnModelConfig
 
 class DqnLunarLanderAgent( IDqnAgent ) :
 
@@ -37,14 +37,15 @@ AGENT_CONFIG.learningUpdateTargetFreq   = 4
 AGENT_CONFIG.learningMaxSteps           = 2000
 AGENT_CONFIG.replayBufferSize           = 100000
 AGENT_CONFIG.discount                   = 0.99
+AGENT_CONFIG.tau                        = 0.001
 AGENT_CONFIG.seed                       = 0
 
 MODEL_CONFIG = DqnModelConfig()
 MODEL_CONFIG.inputShape = ( 8 ) # rank-1 tensor ( 8-vector )
 MODEL_CONFIG.outputShape = ( 4 ) # rank-1 tensor ( 4-vector, 1 qvalue per action )
-MODEL_CONFIG.layers = [ { 'type' : 'fc', 'units' : 128, 'activation' : 'relu' },
-                        { 'type' : 'fc', 'units' : 64, 'activation' : 'relu' },
-                        { 'type' : 'fc', 'units' : 16, 'activation' : 'relu' },
-                        { 'type' : 'fc', 'units' : 64, 'activation' : 'linear' } ]
+MODEL_CONFIG.layers = [ { 'name': 'fc1', 'type' : 'fc', 'units' : 128, 'activation' : 'relu' },
+                        { 'name': 'fc2', 'type' : 'fc', 'units' : 64, 'activation' : 'relu' },
+                        { 'name': 'fc3', 'type' : 'fc', 'units' : 16, 'activation' : 'relu' },
+                        { 'name': 'fc4', 'type' : 'fc', 'units' : 64, 'activation' : 'linear' } ]
 
 

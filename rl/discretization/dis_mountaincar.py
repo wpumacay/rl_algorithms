@@ -12,10 +12,10 @@ import dis_agent
 # define some hyperparameters
 GAMMA = 0.99
 EPSILON = 1.0
-ALPHA = 0.1
+ALPHA = 0.02
 USE_EPSILON_DECAY = True
 USE_ALPHA_DECAY = False
-NUM_EPISODES = 20000
+NUM_EPISODES = 10000
 
 def setupGridAgent( slow, shigh, nactions ) :
     # number of bins to use for the discretization
@@ -36,13 +36,17 @@ def setupGridAgent( slow, shigh, nactions ) :
 
 def setupTilingAgent( slow, shigh, nactions ) :
     # number of bins to use for the discretization
-    NUM_BINS = 20
+    NUM_BINS = 10
     _nbins = tuple( NUM_BINS for _ in range( len( slow ) ) )
     # offsets for the tilings
-    _offsets = ( shigh - slow ) / ( 3 * NUM_BINS )
+    _offsets = ( shigh - slow ) / ( 2 * NUM_BINS )
     # tilings specs
     _tilingSpecs = [ ( _nbins, -_offsets ),
+                     ( _nbins, -0.5 * _offsets ),
+                     ( _nbins, -0.25 * _offsets ),
                      ( _nbins, tuple( 0.0 for _ in range( len( slow ) ) ) ),
+                     ( _nbins, 0.25 * _offsets ),
+                     ( _nbins, 0.5 * _offsets ),
                      ( _nbins, _offsets ) ]
     # create the tiling-discretization agent
     _agent = dis_agent.QLearningTilingAgent( slow,
@@ -58,6 +62,9 @@ def setupTilingAgent( slow, shigh, nactions ) :
     return _agent
 
 def experimentDiscretizationAgent( env, agentType ) :
+    # set the seed (for reproducibility)
+    env.seed( 505 )
+    np.random.seed( 505 )
 
     # grab low-high limits from environment
     _slow = env.observation_space.low
@@ -133,4 +140,5 @@ def experimentDiscretizationAgent( env, agentType ) :
 
 if __name__ == '__main__' :
     ## experimentDiscretizationAgent( gym.make( 'MountainCar-v0' ), 'grid' )
-    experimentDiscretizationAgent( gym.make( 'MountainCar-v0' ), 'tiling' )
+    ## experimentDiscretizationAgent( gym.make( 'MountainCar-v0' ), 'tiling' )
+    experimentDiscretizationAgent( gym.make( 'Acrobot-v1' ), 'tiling' )

@@ -9,10 +9,10 @@ from collections import deque
 # using factory methods that instantiate the functionality required
 
 # import specifics for each environment
-import dqn_lunarLander as dqn
+import rl.dqn.dqn_lunarLander as dqn
 
 # import model builder functionality (pytorch as backend)
-import dqn_models_pytorch as models
+import rl.dqn.dqn_models_pytorch as models
 
 from IPython.core.debugger import set_trace
 
@@ -27,7 +27,7 @@ def experiment() :
 
     _env = gym.make( 'LunarLander-v2' )
 
-    _progressbar = tqdm( range( 1, MAX_EPISODES + 1 ), desc = 'Training:', leave = True )
+    _progressbar = tqdm( range( 1, MAX_EPISODES + 1 ), desc = 'Training>', leave = True )
     _maxAvgScore = -np.inf
     _scoresWindow = deque( maxlen = LOG_WINDOW_SIZE )
     _scores = []
@@ -63,5 +63,5 @@ def experiment() :
 
             # log results
             if iepisode % 100 == 0 :
-                _progressbar.set_description( 'Max Avg. score: %d' % _maxAvgScore )
+                _progressbar.set_description( 'Training> Max Avg. score: %d' % _maxAvgScore )
                 _progressbar.refresh()
