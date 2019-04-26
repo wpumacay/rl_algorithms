@@ -61,8 +61,8 @@ class IDqnAgent( object ) :
         modelConfig._lr = self._lr
 
         # create the model accordingly
-        self._qnetwork_actor = modelBuilder( modelConfig )
-        self._qnetwork_target = modelBuilder( modelConfig )
+        self._qnetwork_actor = modelBuilder( 'actor_network', modelConfig )
+        self._qnetwork_target = modelBuilder( 'target_network', modelConfig )
         self._qnetwork_target.clone( self._qnetwork_actor, tau = 1.0 )
 
         # replay buffer
@@ -72,6 +72,8 @@ class IDqnAgent( object ) :
         # states (current and next) for the model representation
         self._currState = None
         self._nextState = None
+
+        self._printConfig();
 
     def act( self, state, inference = False ) :
         _qvalues = self._qnetwork_actor.eval( state )
@@ -191,3 +193,30 @@ class IDqnAgent( object ) :
 
         # make the learning call to the model (kind of like supervised setting)
         self._qnetwork_actor.train( _states, _actions, _qtargets )
+
+    def _printConfig( self ) :
+        print( '#############################################################' )
+        print( '#                                                           #' )
+        print( '#                 Agent configuration                       #' )
+        print( '#                                                           #' )
+        print( '#############################################################' )
+
+        print( 'state space dimension                           : ', self._stateDim )
+        print( 'number of actions                               : ', self._nActions )
+        print( 'seed                                            : ', self._seed )
+        print( 'epsilon start value                             : ', self._epsStart )
+        print( 'epsilon end value                               : ', self._epsEnd )
+        print( 'epsilon schedule type                           : ', self._epsSchedule )
+        print( 'epsilon linear decay steps                      : ', self._epsSteps )
+        print( 'epsilon geom. decay factor                      : ', self._epsDecay )
+        print( 'learning rate                                   : ', self._lr )
+        print( 'minibatch size                                  : ', self._minibatchSize )
+        print( 'learning starting step for training             : ', self._learningStartsAt )
+        print( 'learning updateFreq (training actor-network)    : ', self._learningUpdateFreq )
+        print( 'learning updateTargetFreq (target-network)      : ', self._learningUpdateTargetFreq )
+        print( 'learning max steps                              : ', self._learningMaxSteps )
+        print( 'replay buffer size                              : ', self._replayBufferSize )
+        print( 'gamma (discount factor)                         : ', self._gamma )
+        print( 'tau (target network soft-updates)               : ', self._tau )
+
+        print( '#############################################################' )

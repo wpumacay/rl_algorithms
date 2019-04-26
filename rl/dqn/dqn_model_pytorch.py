@@ -104,8 +104,8 @@ class NetworkTestLunarLander( nn.Module ) :
 
 class DqnModelPytorch( IDqnModel ) :
 
-    def __init__( self, modelConfig ) :
-        super( DqnModelPytorch, self ).__init__( modelConfig )
+    def __init__( self, name, modelConfig ) :
+        super( DqnModelPytorch, self ).__init__( name, modelConfig )
 
     def build( self ) :
         self._device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
@@ -162,4 +162,4 @@ class DqnModelPytorch( IDqnModel ) :
     def load( self, filename ) :
         pass
 
-DqnModelBuilder = lambda config : DqnModelPytorch( config )
+DqnModelBuilder = lambda name, config : DqnModelPytorch( name, config )

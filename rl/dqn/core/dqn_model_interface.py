@@ -9,8 +9,11 @@ from IPython.core.debugger import set_trace
 
 class IDqnModel( object ) :
 
-    def __init__( self, modelConfig ) :
+    def __init__( self, name, modelConfig ) :
         super( IDqnModel, self ).__init__()
+
+        # just an identifier
+        self._name = name
 
         # save configuration data
         self._inputShape = modelConfig.inputShape
@@ -21,6 +24,8 @@ class IDqnModel( object ) :
         self._lr = modelConfig._lr
 
         self.build()
+        # print configuration just in case
+        self._printConfig()
 
     def build( self ) :
         raise NotImplementedError( 'IDqnModel::build> virtual method' )
@@ -40,3 +45,21 @@ class IDqnModel( object ) :
     def load( self, filename ) :
         raise NotImplementedError( 'IDqnModel::load> virtual method' )
 
+    @property
+    def name( self ) :
+        return self._name
+
+    def _printConfig( self ) :
+        # Each model could potentially override this with its own extra details
+        print( '#############################################################' )
+        print( '#                                                           #' )
+        print( '#                 Model configuration                       #' )
+        print( '#                                                           #' )
+        print( '#############################################################' )
+
+        print( 'model name          : ', self._name )
+        print( 'input shape         : ', self._inputShape )
+        print( 'output shape        : ', self._outputShape )
+        print( 'learning rate       : ', self._lr )
+
+        print( '#############################################################' )
