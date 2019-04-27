@@ -79,22 +79,19 @@ class NetworkTestLunarLander( nn.Module ) :
         self._outputShape = outputShape
 
         # define layers for this network
-        self.fc1 = nn.Linear( self._inputShape[0], 128 )
-        self.fc2 = nn.Linear( 128, 64 )
-        self.fc3 = nn.Linear( 64, 16 )
-        self.fc4 = nn.Linear( 16, self._outputShape[0] )
+        self.fc1 = nn.Linear( self._inputShape[0], 64 )
+        self.fc2 = nn.Linear( 64, 64 )
+        self.fc3 = nn.Linear( 64, self._outputShape[0] )
 
         self.h1 = None
         self.h2 = None
-        self.h3 = None
         self.out = None
 
     def forward( self, X ) :
         self.h1 = F.relu( self.fc1( X ) )
         self.h2 = F.relu( self.fc2( self.h1 ) )
-        self.h3 = F.relu( self.fc3( self.h2 ) )
 
-        self.out = self.fc4( self.h3 )
+        self.out = self.fc3( self.h2 )
 
         return self.out
 
@@ -126,7 +123,7 @@ class DqnModelPytorch( IDqnModel ) :
     def eval( self, state, inference = False ) :
         self._nnetwork.eval()
 
-        _xx = torch.from_numpy( state ).to( self._device )
+        _xx = torch.from_numpy( state ).float().to( self._device )
 
         return self._nnetwork.forward( _xx ).cpu().detach().numpy()
 
@@ -134,7 +131,7 @@ class DqnModelPytorch( IDqnModel ) :
         self._nnetwork.train()
         
         _aa = torch.from_numpy( actions ).unsqueeze( 1 ).to( self._device )
-        _xx = torch.from_numpy( states ).to( self._device )
+        _xx = torch.from_numpy( states ).float().to( self._device )
         _yy = torch.from_numpy( targets ).float().unsqueeze( 1 ).to( self._device )
 
         # reset the gradients buffer

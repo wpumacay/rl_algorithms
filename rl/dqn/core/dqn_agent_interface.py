@@ -86,7 +86,7 @@ class IDqnAgent( object ) :
             self._qmodel_target.clone( self._qmodel_actor, tau = 1.0 )
 
     def act( self, state, inference = False ) :
-        _qvalues = self._qmodel_actor.eval( state )
+        _qvalues = self._qmodel_actor.eval( self._preprocess( state ) )
 
         if inference :
             return np.argmax( _qvalues )
@@ -212,6 +212,14 @@ class IDqnAgent( object ) :
     @property
     def epsilon( self ) :
         return self._epsilon
+
+    @property
+    def seed( self ) :
+        return self._seed
+        
+    @property
+    def learningMaxSteps( self ) :
+        return self._learningMaxSteps
     
 
     def _printConfig( self ) :

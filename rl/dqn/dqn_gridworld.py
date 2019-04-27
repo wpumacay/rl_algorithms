@@ -1,4 +1,6 @@
 
+import numpy as np
+
 from rl.dqn.core.dqn_agent_interface import IDqnAgent
 from rl.dqn.utils.dqn_utils import DqnAgentConfig 
 from rl.dqn.utils.dqn_utils import DqnModelConfig
