@@ -76,6 +76,15 @@ class IDqnAgent( object ) :
 
         self._printConfig();
 
+    def save( self, filename ) :
+        if self._qmodel_actor :
+            self._qmodel_actor.save( filename )
+
+    def load( self, filename ) :
+        if self._qmodel_actor :
+            self._qmodel_actor.load( filename )
+            self._qmodel_target.clone( self._qmodel_actor, tau = 1.0 )
+
     def act( self, state, inference = False ) :
         _qvalues = self._qmodel_actor.eval( state )
 
@@ -110,7 +119,9 @@ class IDqnAgent( object ) :
 
         # update the agent's step counter
         self._istep += 1
-        # and the episode counter if we finished an episode
+        # and the episode counter if we finished an episode, and ...
+        # the states as well (I had a bug here, becasue I didn't ...
+        # reset the states).
         if _done :
             self._iepisode += 1
             self._currState = None

@@ -14,37 +14,38 @@ from rl.envs import gridworld_utils
 # using factory methods that instantiate the functionality required
 
 # import specifics for each environment
-## import rl.dqn.dqn_lunarLander as dqn
-import rl.dqn.dqn_gridworld as dqn
+import rl.dqn.dqn_lunarLander as dqn
+## import rl.dqn.dqn_gridworld as dqn
 
 # import model builder functionality (pytorch as backend)
-## import rl.dqn.dqn_model_pytorch as model
-import rl.dqn.dqn_model_table as model
+import rl.dqn.dqn_model_pytorch as model
+## import rl.dqn.dqn_model_table as model
 
 from IPython.core.debugger import set_trace
 
 def experiment() :
     MAX_EPISODES = dqn.AGENT_CONFIG.learningMaxSteps
-    MAX_STEPS_EPISODE = 100
+    MAX_STEPS_EPISODE = 10000
     LOG_WINDOW_SIZE = 100
 
-    ## _agent = dqn.DqnAgentBuilder( dqn.AGENT_CONFIG,
-    ##                               dqn.MODEL_CONFIG,
-    ##                               model.DqnModelBuilder )
+    _agent = dqn.DqnAgentBuilder( dqn.AGENT_CONFIG,
+                                  dqn.MODEL_CONFIG,
+                                  model.DqnModelBuilder )
 
-    _agent = dqn.DqnAgentBuilderTabular( dqn.AGENT_CONFIG,
-                                         dqn.MODEL_CONFIG,
-                                         model.DqnModelBuilder )
+    ## _agent = dqn.DqnAgentBuilderTabular( dqn.AGENT_CONFIG,
+    ##                                      dqn.MODEL_CONFIG,
+    ##                                      model.DqnModelBuilder )
 
-    ## _env = gym.make( 'LunarLander-v2' )
-    _env = gridworld.GridWorldEnv( gridworld.BOOK_LAYOUT, # DEFAULT_LAYOUT
-                                   noise = 0.0,
-                                   rewardAtGoal = -1.0, # 10.0
-                                   rewardAtHole = -1.0, # -10.0
-                                   rewardPerStep = -1.0,
-                                   renderInteractive = False,
-                                   randomSeed = dqn.AGENT_CONFIG.seed )
-    # _env.seed( dqn.AGENT_CONFIG.seed )
+    _env = gym.make( 'LunarLander-v2' )
+    _env.seed( dqn.AGENT_CONFIG.seed )
+
+    ## _env = gridworld.GridWorldEnv( gridworld.BOOK_LAYOUT, # DEFAULT_LAYOUT
+    ##                                noise = 0.0,
+    ##                                rewardAtGoal = -1.0, # 10.0
+    ##                                rewardAtHole = -1.0, # -10.0
+    ##                                rewardPerStep = -1.0,
+    ##                                renderInteractive = False,
+    ##                                randomSeed = dqn.AGENT_CONFIG.seed )
 
     _progressbar = tqdm( range( 1, MAX_EPISODES + 1 ), desc = 'Training>', leave = True )
     _maxAvgScore = -np.inf
@@ -88,13 +89,35 @@ def experiment() :
                 _progressbar.set_description( 'Training> Max-Avg=%.2f, Curr=%.2f, Eps=%.2f' % (_maxAvgScore, _score, _agent.epsilon) )
                 _progressbar.refresh()
 
-    # for gridworld, plot the resulting q-table
-    plt.ion()
+##     # for gridworld, plot the resulting q-table
+##     plt.ion()
+## 
+##     gridworld_utils.plotQTableInGrid( _agent._qmodel_actor._qtable, _env.rows, _env.cols )
+##     gridworld_utils.plotQTableInGrid( _agent._qmodel_target._qtable, _env.rows, _env.cols )
+## 
+##     print( 'epsilon: ', _agent.epsilon )
 
-    gridworld_utils.plotQTableInGrid( _agent._qmodel_actor._qtable, _env.rows, _env.cols )
-    gridworld_utils.plotQTableInGrid( _agent._qmodel_target._qtable, _env.rows, _env.cols )
+    _agent.save( 'model_pytorch_dqn_lunarlander.pth' )
 
-    print( 'epsilon: ', _agent.epsilon )
+    _ = input( 'Press ENTER to continue ...' )
+
+    _agent = dqn.DqnAgentBuilder( dqn.AGENT_CONFIG, 
+                                  dqn.MODEL_CONFIG, 
+                                  model.DqnModelBuilder )
+    
+    _agent.load( 'model_pytorch_dqn_lunarlander.pth' )
+
+    for _ in range( 10 ) :
+
+        _state = _env.reset()
+
+        for istep in range( MAX_STEPS_EPISODE ) :
+            _action = _agent.act( _state, inference = True )
+            _state, _, _done, _ = _env.step( _action )
+            _env.render()
+
+            if _done :
+                break
 
     _ = input( 'Press ENTER to continue ...' )
 

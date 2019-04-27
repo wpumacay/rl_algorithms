@@ -157,9 +157,11 @@ class DqnModelPytorch( IDqnModel ) :
         self._nnetwork.clone( other._nnetwork, tau )
 
     def save( self, filename ) :
-        pass
+        if self._nnetwork :
+            torch.save( self._nnetwork.state_dict(), filename )
 
     def load( self, filename ) :
-        pass
+        if self._nnetwork :
+            self._nnetwork.load_state_dict( torch.load( filename ) )
 
 DqnModelBuilder = lambda name, config : DqnModelPytorch( name, config )
