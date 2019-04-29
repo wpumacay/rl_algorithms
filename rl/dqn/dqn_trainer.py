@@ -23,6 +23,7 @@ from rl.dqn import dqn_gym_control
 
 # import model builder functionality (pytorch as backend)
 from rl.dqn import dqn_model_pytorch
+from rl.dqn import dqn_model_tensorflow
 from rl.dqn import dqn_model_table
 
 from IPython.core.debugger import set_trace
@@ -64,7 +65,7 @@ def createEnvironment( packageName, domainName ) :
 
     return _env
 
-def createAgent( packageName, domainName, env, agentType, test = False ) :
+def createAgent( packageName, domainName, env, agentType, library, test = False ) :
     _agent, _savefile = None, None
 
     if agentType == 'dqn' :
@@ -75,9 +76,19 @@ def createAgent( packageName, domainName, env, agentType, test = False ) :
             dqn_gym_control.MODEL_CONFIG.inputShape = ( env.observation_space.shape[0], )
             dqn_gym_control.MODEL_CONFIG.outputShape = ( env.action_space.n, )
             # create the agent using the appropriate factory method
-            _agent = dqn_gym_control.DqnAgentBuilder( dqn_gym_control.AGENT_CONFIG,
-                                                      dqn_gym_control.MODEL_CONFIG,
-                                                      dqn_model_pytorch.DqnModelBuilder )
+            if library == 'pytorch' :
+                _agent = dqn_gym_control.DqnAgentBuilder( dqn_gym_control.AGENT_CONFIG,
+                                                          dqn_gym_control.MODEL_CONFIG,
+                                                          dqn_model_pytorch.DqnModelBuilder )
+
+                _savefile = 'model_pytorch_dqn_' + domainName + '.pth'
+            else :
+                _agent = dqn_gym_control.DqnAgentBuilder( dqn_gym_control.AGENT_CONFIG,
+                                                          dqn_gym_control.MODEL_CONFIG,
+                                                          dqn_model_tensorflow.DqnModelBuilder )
+
+                _savefile = 'model_tensorflow_dqn_' + domainName + '.h5'
+
         elif packageName == 'custom' and domainName == 'gridworld' :
             # load some parameters from environment
             dqn_gridworld.AGENT_CONFIG.stateDim = env.nS
@@ -85,11 +96,18 @@ def createAgent( packageName, domainName, env, agentType, test = False ) :
             dqn_gridworld.MODEL_CONFIG.inputShape = ( env.nS, )
             dqn_gridworld.MODEL_CONFIG.outputShape = ( env.nA, )
             # create the agent using the appropriate factory method
-            _agent = dqn_gridworld.DqnAgentBuilderFapprox( dqn_gridworld.AGENT_CONFIG,
-                                                           dqn_gridworld.MODEL_CONFIG,
-                                                           dqn_model_pytorch.DqnModelBuilder )
+            if library == 'pytorch' :
+                _agent = dqn_gridworld.DqnAgentBuilderFapprox( dqn_gridworld.AGENT_CONFIG,
+                                                               dqn_gridworld.MODEL_CONFIG,
+                                                               dqn_model_pytorch.DqnModelBuilder )
 
-        _savefile = 'model_pytorch_dqn_' + domainName + '.pth'
+                _savefile = 'model_pytorch_dqn_' + domainName + '.pth'
+            else :
+                _agent = dqn_gridworld.DqnAgentBuilderFapprox( dqn_gridworld.AGENT_CONFIG,
+                                                               dqn_gridworld.MODEL_CONFIG,
+                                                               dqn_model_tensorflow.DqnModelBuilder )
+
+                _savefile = 'model_tensorflow_dqn_' + domainName + '.h5'
 
     elif agentType == 'tabular' : # only for testing with custom gridworld environment
         # load some parameters from environment
@@ -176,12 +194,12 @@ def test( env, agent ) :
             if _done :
                 break
 
-def experiment( packageName, domainName, agentType ) :
+def experiment( packageName, domainName, agentType, library ) :
 
     _env = createEnvironment( packageName, domainName )
 
     if not TEST :
-        _agent, _savefile = createAgent( packageName, domainName, _env, agentType )
+        _agent, _savefile = createAgent( packageName, domainName, _env, agentType, library )
         train( _env, _agent, _savefile )
 
         if domainName == 'gridworld' and agentType == 'tabular' :
@@ -194,7 +212,7 @@ def experiment( packageName, domainName, agentType ) :
         print( 'epsilon: ', _agent.epsilon )
 
     else :
-        _agent, _savefile = createAgent( packageName, domainName, _env, agentType, test = True )
+        _agent, _savefile = createAgent( packageName, domainName, _env, agentType, library, test = True )
         test( _env, _agent )
 
     _ = input( 'Press ENTER to continue ...' )
@@ -205,6 +223,7 @@ if __name__ == '__main__' :
     _parser.add_argument( 'domain_name', help='domain to load from the package [LunarLander-v2|SpaceInvaders|gridworld]' )
     _parser.add_argument( 'agent_type', help='type of agent to be used [dqn|ppo|ddpg|tabular(for gridworl only)]' )
     _parser.add_argument( 'mode', help='mode to run the experiment (train|test)', type=str, choices=['train', 'test'] )
+    _parser.add_argument( '--library', help='deep learning library to use (pytorch|tensorflow)', type=str, choices=['tensorflow','pytorch'], default='pytorch' )
 
     _args = _parser.parse_args()
 
@@ -217,7 +236,8 @@ if __name__ == '__main__' :
     print( 'Domain      : ', _args.domain_name )
     print( 'Agent       : ', _args.agent_type )
     print( 'Mode        : ', _args.mode )
+    print( 'Library     : ', _args.library )
     print( '#############################################################' )
 
     TEST = ( _args.mode == 'test' )
-    experiment( _args.package_name, _args.domain_name, _args.agent_type )
+    experiment( _args.package_name, _args.domain_name, _args.agent_type, _args.library )

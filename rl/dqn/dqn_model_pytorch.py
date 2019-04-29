@@ -10,6 +10,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+from IPython.core.debugger import set_trace
+
 class NetworkPytorchGeneric( nn.Module ) :
 
     def __init__( self, inputShape, outputShape, layersDefs ) :
@@ -139,6 +141,8 @@ class DqnModelPytorch( IDqnModel ) :
 
         # do forward pass to compute q-target predictions
         _yyhat = self._nnetwork.forward( _xx ).gather( 1, _aa )
+
+        ## set_trace()
 
         # and compute loss and gradients
         _loss = self._lossFcn( _yyhat, _yy )
