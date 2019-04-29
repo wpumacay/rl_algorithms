@@ -5,8 +5,8 @@ from rl.dqn.utils.dqn_utils import DqnModelConfig
 
 class DqnLunarLanderAgent( IDqnAgent ) :
 
-    def __init__( self, agentConfig, modelConfig, modelBuilder ) :
-        super( DqnLunarLanderAgent, self ).__init__( agentConfig, modelConfig, modelBuilder )
+    def __init__( self, agentConfig, modelConfig, modelBuilder, backendInitializer ) :
+        super( DqnLunarLanderAgent, self ).__init__( agentConfig, modelConfig, modelBuilder, backendInitializer )
 
     def _preprocess( self, rawState ) :
         """Default preprocessing by just copying the data
@@ -20,8 +20,8 @@ class DqnLunarLanderAgent( IDqnAgent ) :
         """
         return rawState.copy()
 
-DqnAgentBuilder = lambda agentConfig, modelConfig, modelBuilder : \
-                                DqnLunarLanderAgent( agentConfig, modelConfig, modelBuilder )
+DqnAgentBuilder = lambda agentConfig, modelConfig, modelBuilder, backendInitializer : \
+                                DqnLunarLanderAgent( agentConfig, modelConfig, modelBuilder, backendInitializer )
 
 AGENT_CONFIG = DqnAgentConfig()
 AGENT_CONFIG.stateDim                   = 8

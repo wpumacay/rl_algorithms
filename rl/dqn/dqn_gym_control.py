@@ -5,8 +5,8 @@ from rl.dqn.utils.dqn_utils import DqnModelConfig
 
 class DqnGymControlAgent( IDqnAgent ) :
 
-    def __init__( self, agentConfig, modelConfig, modelBuilder ) :
-        super( DqnGymControlAgent, self ).__init__( agentConfig, modelConfig, modelBuilder )
+    def __init__( self, agentConfig, modelConfig, modelBuilder, backendInitializer ) :
+        super( DqnGymControlAgent, self ).__init__( agentConfig, modelConfig, modelBuilder, backendInitializer )
 
     def _preprocess( self, rawState ) :
         """Default preprocessing by just copying the data
@@ -20,8 +20,8 @@ class DqnGymControlAgent( IDqnAgent ) :
         """
         return rawState.copy()
 
-DqnAgentBuilder = lambda agentConfig, modelConfig, modelBuilder : \
-                                DqnGymControlAgent( agentConfig, modelConfig, modelBuilder )
+DqnAgentBuilder = lambda agentConfig, modelConfig, modelBuilder, backendInitializer : \
+                                DqnGymControlAgent( agentConfig, modelConfig, modelBuilder, backendInitializer )
 
 AGENT_CONFIG = DqnAgentConfig()
 AGENT_CONFIG.stateDim                   = -1 # written by trainer using env. info

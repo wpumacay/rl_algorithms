@@ -81,19 +81,28 @@ class NetworkTestLunarLander( nn.Module ) :
         self._outputShape = outputShape
 
         # define layers for this network
-        self.fc1 = nn.Linear( self._inputShape[0], 64 )
-        self.fc2 = nn.Linear( 64, 64 )
-        self.fc3 = nn.Linear( 64, self._outputShape[0] )
+        self.fc1 = nn.Linear( self._inputShape[0], 128 )
+        self.fc2 = nn.Linear( 128, 64 )
+        self.fc3 = nn.Linear( 64, 16 )
+        self.fc4 = nn.Linear( 16, self._outputShape[0] )
+
+        # initialize the weights
+        _layers = [ self.fc1, self.fc2, self.fc3, self.fc4 ]
+        for layer in _layers :
+            torch.nn.init.xavier_normal_( layer.weight )
+            torch.nn.init.zeros_( layer.bias )
 
         self.h1 = None
         self.h2 = None
+        self.h3 = None
         self.out = None
 
     def forward( self, X ) :
         self.h1 = F.relu( self.fc1( X ) )
         self.h2 = F.relu( self.fc2( self.h1 ) )
+        self.h3 = F.relu( self.fc3( self.h2 ) )
 
-        self.out = self.fc3( self.h2 )
+        self.out = self.fc4( self.h3 )
 
         return self.out
 
@@ -121,6 +130,10 @@ class DqnModelPytorch( IDqnModel ) :
 
         # @TODO: Add optimizer options to modelconfig
         self._optimizer = optim.Adam( self._nnetwork.parameters(), lr = self._lr )
+
+    def initialize( self, args ) :
+        # nothing to do here (pytorch is nice :D)
+        pass
 
     def eval( self, state, inference = False ) :
         self._nnetwork.eval()
@@ -164,5 +177,9 @@ class DqnModelPytorch( IDqnModel ) :
     def load( self, filename ) :
         if self._nnetwork :
             self._nnetwork.load_state_dict( torch.load( filename ) )
+
+def BackendInitializer() :
+    # nothing to initialize (no sessions, global variables, etc.)
+    return {}
 
 DqnModelBuilder = lambda name, config : DqnModelPytorch( name, config )

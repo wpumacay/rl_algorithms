@@ -22,7 +22,7 @@ from rl.dqn import dqn_gridworld
 from rl.dqn import dqn_gym_control
 
 # import model builder functionality (pytorch as backend)
-# from rl.dqn import dqn_model_pytorch
+from rl.dqn import dqn_model_pytorch
 from rl.dqn import dqn_model_tensorflow
 from rl.dqn import dqn_model_table
 
@@ -79,13 +79,15 @@ def createAgent( packageName, domainName, env, agentType, library, test = False 
             if library == 'pytorch' :
                 _agent = dqn_gym_control.DqnAgentBuilder( dqn_gym_control.AGENT_CONFIG,
                                                           dqn_gym_control.MODEL_CONFIG,
-                                                          dqn_model_pytorch.DqnModelBuilder )
+                                                          dqn_model_pytorch.DqnModelBuilder,
+                                                          dqn_model_pytorch.BackendInitializer )
 
                 _savefile = 'model_pytorch_dqn_' + domainName + '.pth'
             else :
                 _agent = dqn_gym_control.DqnAgentBuilder( dqn_gym_control.AGENT_CONFIG,
                                                           dqn_gym_control.MODEL_CONFIG,
-                                                          dqn_model_tensorflow.DqnModelBuilder )
+                                                          dqn_model_tensorflow.DqnModelBuilder,
+                                                          dqn_model_tensorflow.BackendInitializer )
 
                 _savefile = 'model_tensorflow_dqn_' + domainName + '.h5'
 
@@ -99,13 +101,15 @@ def createAgent( packageName, domainName, env, agentType, library, test = False 
             if library == 'pytorch' :
                 _agent = dqn_gridworld.DqnAgentBuilderFapprox( dqn_gridworld.AGENT_CONFIG,
                                                                dqn_gridworld.MODEL_CONFIG,
-                                                               dqn_model_pytorch.DqnModelBuilder )
+                                                               dqn_model_pytorch.DqnModelBuilder,
+                                                               dqn_model_pytorch.BackendInitializer )
 
                 _savefile = 'model_pytorch_dqn_' + domainName + '.pth'
             else :
                 _agent = dqn_gridworld.DqnAgentBuilderFapprox( dqn_gridworld.AGENT_CONFIG,
                                                                dqn_gridworld.MODEL_CONFIG,
-                                                               dqn_model_tensorflow.DqnModelBuilder )
+                                                               dqn_model_tensorflow.DqnModelBuilder,
+                                                               dqn_model_tensorflow.BackendInitializer )
 
                 _savefile = 'model_tensorflow_dqn_' + domainName + '.h5'
 

@@ -7,8 +7,8 @@ from rl.dqn.utils.dqn_utils import DqnModelConfig
 
 class DqnGridworldAgentTabular( IDqnAgent ) :
 
-    def __init__( self, agentConfig, modelConfig, modelBuilder ) :
-        super( DqnGridworldAgentTabular, self ).__init__( agentConfig, modelConfig, modelBuilder )
+    def __init__( self, agentConfig, modelConfig, modelBuilder, backendInitializer ) :
+        super( DqnGridworldAgentTabular, self ).__init__( agentConfig, modelConfig, modelBuilder, backendInitializer )
 
     def _preprocess( self, rawState ) :
         # raw state is state indx, so just return it for tabular case
@@ -16,8 +16,8 @@ class DqnGridworldAgentTabular( IDqnAgent ) :
 
 class DqnGridworldAgentFapprox( IDqnAgent ) :
 
-    def __init__( self, agentConfig, modelConfig, modelBuilder ) :
-        super( DqnGridworldAgentFapprox, self ).__init__( agentConfig, modelConfig, modelBuilder )
+    def __init__( self, agentConfig, modelConfig, modelBuilder, backendInitializer ) :
+        super( DqnGridworldAgentFapprox, self ).__init__( agentConfig, modelConfig, modelBuilder, backendInitializer )
 
     def _preprocess( self, rawState ) :
         # rawState is an index, so convert it to a one-hot representation
@@ -27,10 +27,10 @@ class DqnGridworldAgentFapprox( IDqnAgent ) :
         return _stateOneHot
 
 DqnAgentBuilderTabular = lambda agentConfig, modelConfig, modelBuilder : \
-                            DqnGridworldAgentTabular( agentConfig, modelConfig, modelBuilder )
+                            DqnGridworldAgentTabular( agentConfig, modelConfig, modelBuilder, lambda : {} )
 
-DqnAgentBuilderFapprox = lambda agentConfig, modelConfig, modelBuilder : \
-                            DqnGridworldAgentFapprox( agentConfig, modelConfig, modelBuilder )
+DqnAgentBuilderFapprox = lambda agentConfig, modelConfig, modelBuilder, backendInitializer : \
+                            DqnGridworldAgentFapprox( agentConfig, modelConfig, modelBuilder, backendInitializer )
 
 AGENT_CONFIG = DqnAgentConfig()
 AGENT_CONFIG.stateDim                   = 16 # gridworld book_layout

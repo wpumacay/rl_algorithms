@@ -45,6 +45,9 @@ class IDqnModel( object ) :
     def load( self, filename ) :
         raise NotImplementedError( 'IDqnModel::load> virtual method' )
 
+    def initialize( self, args ) :
+        raise NotImplementedError( 'IDqnModel::initialize> virtual method' )
+
     @property
     def name( self ) :
         return self._name

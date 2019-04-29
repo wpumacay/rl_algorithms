@@ -9,7 +9,7 @@ from IPython.core.debugger import set_trace
 
 class IDqnAgent( object ) :
 
-    def __init__( self, agentConfig, modelConfig, modelBuilder ) :
+    def __init__( self, agentConfig, modelConfig, modelBuilder, backendInitializer ) :
         """Constructs a generic Dqn agent, given configuration information
 
         Args:
@@ -64,6 +64,12 @@ class IDqnAgent( object ) :
         # create the model accordingly
         self._qmodel_actor = modelBuilder( 'actor_model', modelConfig )
         self._qmodel_target = modelBuilder( 'target_model', modelConfig )
+
+        # initialize backend-specific functionality
+        _initInfo = backendInitializer()
+        self._qmodel_actor.initialize( _initInfo )
+        self._qmodel_target.initialize( _initInfo )
+
         self._qmodel_target.clone( self._qmodel_actor, tau = 1.0 )
 
         # replay buffer

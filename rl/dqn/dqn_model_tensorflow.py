@@ -18,11 +18,16 @@ def createNetworkTestLunarLander( inputShape, outputShape, layersDefs ) :
 
     # keep things simple (use keras for core model definition)
     _networkOps = keras.Sequential()
+
+    # define initializers
+    _kernelInitializer = keras.initializers.glorot_normal( seed = 0 )
+    _biasInitializer = keras.initializers.Zeros()
+
     # add the layers for our test-case
-    _networkOps.add( keras.layers.Dense( 128, activation = 'relu', input_shape = inputShape ) )
-    _networkOps.add( keras.layers.Dense( 64, activation = 'relu' ) )
-    _networkOps.add( keras.layers.Dense( 16, activation = 'relu' ) )
-    _networkOps.add( keras.layers.Dense( outputShape[0] ) )
+    _networkOps.add( keras.layers.Dense( 128, activation = 'relu', input_shape = inputShape, kernel_initializer = _kernelInitializer, bias_initializer = _biasInitializer ) )
+    _networkOps.add( keras.layers.Dense( 64, activation = 'relu', kernel_initializer = _kernelInitializer, bias_initializer = _biasInitializer ) )
+    _networkOps.add( keras.layers.Dense( 16, activation = 'relu', kernel_initializer = _kernelInitializer, bias_initializer = _biasInitializer ) )
+    _networkOps.add( keras.layers.Dense( outputShape[0], kernel_initializer = _kernelInitializer, bias_initializer = _biasInitializer ) )
 
     ## _networkOps.summary()
 
@@ -53,6 +58,7 @@ class DqnModelTensorflow( IDqnModel ) :
         
         # create the ops for evaluating the output of the model (Q(s,:))
         self._opQhat_s = self._nnetwork( self._tfStates )
+        # @TODO|CHECK: Change the gather call by multiply + one-hot
         # create the ops for getting the Q(s,a) for each batch of (states) + (actions)
         # using tf.gather_nd, and expanding action indices with batch indices
         self._opActionsWithIndices = tf.stack( [self._tfActionsIndices, self._tfActions], axis = 1 )
@@ -62,18 +68,14 @@ class DqnModelTensorflow( IDqnModel ) :
         self._opLoss = tf.losses.mean_squared_error( self._tfQTargets, self._opQhat_sa )
 
         # create ops for the loss and optimizer
-        self._opOptim = tf.train.AdamOptimizer( learning_rate = self._lr ).minimize( self._opLoss )
+        self._opOptim = tf.train.AdamOptimizer( learning_rate = self._lr ).minimize( self._opLoss, var_list = self._nnetwork.trainable_weights )
 
-        # create the tf session for all process
-        if tf.get_default_session() is None :
-            # create an interactive session if none created
-            self._sess = tf.InteractiveSession()
-            # @TODO: What about multiple agents?
-            self._initializer = tf.global_variables_initializer()
-            self._sess.run( self._initializer )
-        else :
-            # grab the default session (created elsewhere)
-            self._sess = tf.get_default_session()
+        # tf.Session, passed by the backend-initializer
+        self._sess = None
+
+    def initialize( self, args ) :
+        # grab session and initialize
+        self._sess = args['session']
 
     def eval( self, state, inference = False ) :
         _batchStates = [state] if state.ndim == 1 else state
@@ -113,5 +115,12 @@ class DqnModelTensorflow( IDqnModel ) :
 
     def load( self, filename ) :
         self._nnetwork.load_weights( filename )
+
+
+def BackendInitializer() :
+    session = tf.InteractiveSession()
+    session.run( tf.global_variables_initializer() )
+
+    return { 'session' : session }
 
 DqnModelBuilder = lambda name, config : DqnModelTensorflow( name, config )
