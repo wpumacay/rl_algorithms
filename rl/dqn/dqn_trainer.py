@@ -22,7 +22,7 @@ from rl.dqn import dqn_gridworld
 from rl.dqn import dqn_gym_control
 
 # import model builder functionality (pytorch as backend)
-from rl.dqn import dqn_model_pytorch
+# from rl.dqn import dqn_model_pytorch
 from rl.dqn import dqn_model_tensorflow
 from rl.dqn import dqn_model_table
 
@@ -210,6 +210,8 @@ def experiment( packageName, domainName, agentType, library ) :
             gridworld_utils.plotQTableInGrid( _agent._qmodel_target._qtable, _env.rows, _env.cols )
 
         print( 'epsilon: ', _agent.epsilon )
+
+        test( _env, _agent )
 
     else :
         _agent, _savefile = createAgent( packageName, domainName, _env, agentType, library, test = True )

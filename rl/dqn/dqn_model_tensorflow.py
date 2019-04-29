@@ -19,9 +19,9 @@ def createNetworkTestLunarLander( inputShape, outputShape, layersDefs ) :
     # keep things simple (use keras for core model definition)
     _networkOps = keras.Sequential()
     # add the layers for our test-case
-    _networkOps.add( keras.layers.Dense( 128, input_shape = inputShape ) )
-    _networkOps.add( keras.layers.Dense( 64 ) )
-    _networkOps.add( keras.layers.Dense( 16 ) )
+    _networkOps.add( keras.layers.Dense( 128, activation = 'relu', input_shape = inputShape ) )
+    _networkOps.add( keras.layers.Dense( 64, activation = 'relu' ) )
+    _networkOps.add( keras.layers.Dense( 16, activation = 'relu' ) )
     _networkOps.add( keras.layers.Dense( outputShape[0] ) )
 
     ## _networkOps.summary()
@@ -68,6 +68,9 @@ class DqnModelTensorflow( IDqnModel ) :
         if tf.get_default_session() is None :
             # create an interactive session if none created
             self._sess = tf.InteractiveSession()
+            # @TODO: What about multiple agents?
+            self._initializer = tf.global_variables_initializer()
+            self._sess.run( self._initializer )
         else :
             # grab the default session (created elsewhere)
             self._sess = tf.get_default_session()
@@ -81,6 +84,8 @@ class DqnModelTensorflow( IDqnModel ) :
         return _qvalues
 
     def train( self, states, actions, targets ) :
+
+        ## set_trace()
         
         _, _loss = self._sess.run( [ self._opOptim, self._opLoss ],
                                    feed_dict = { self._tfStates : states,
@@ -104,9 +109,9 @@ class DqnModelTensorflow( IDqnModel ) :
         self._nnetwork.set_weights( _weights )
 
     def save( self, filename ) :
-        self._nnetwork.save( filename )
+        self._nnetwork.save_weights( filename )
 
     def load( self, filename ) :
-        self._nnetwork = keras.models.load_model( filename )
+        self._nnetwork.load_weights( filename )
 
 DqnModelBuilder = lambda name, config : DqnModelTensorflow( name, config )
