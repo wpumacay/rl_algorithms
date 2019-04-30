@@ -2,13 +2,10 @@
 matplotlib
 numpy
 tqdm
-sklearn
-pytest
-appdirs
-pillow
+box2d
 pyglet
-atari-py
 gym
-tensorflow-gpu
+h5py
+tensorflow-gpu==1.12.0
 torch
 torchvision
