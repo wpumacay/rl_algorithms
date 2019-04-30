@@ -64,8 +64,8 @@ class NetworkPytorchGeneric( nn.Module ) :
         return x
 
     def clone( self, other, tau ) :
-        for _localParams, _otherParams in zip( self.parameters(), other.parameters() ) :
-            _localParams.data.copy_( tau * _localParams.data + ( 1.0 - tau ) * _otherParams.data )
+        for _thisParams, _otherParams in zip( self.parameters(), other.parameters() ) :
+            _thisParams.data.copy_( ( 1. - tau ) * _thisParams.data + ( tau ) * _otherParams.data )
 
 class NetworkTestLunarLander( nn.Module ) :
 
