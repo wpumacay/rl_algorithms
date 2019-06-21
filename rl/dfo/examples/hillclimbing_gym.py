@@ -2,6 +2,7 @@
 import os
 import sys
 import gym
+import time
 import numpy as np
 from tqdm import tqdm
 from collections import deque
@@ -18,12 +19,12 @@ MAX_EPISODES = 1000
 MAX_EPISODE_LENGTH = 1000
 GAMMA = 1.0
 LOG_WINDOW_SIZE = 100
-
+SEED = 0
 
 def train( env, agent, agentBest ) :
     # seed the env and random number generator
-    env.seed( 0 )
-    np.random.seed( 0 )
+    env.seed( SEED )
+    np.random.seed( SEED )
 
     _scoresBuffer = []
     _scoresAvgs = []
@@ -51,7 +52,7 @@ def train( env, agent, agentBest ) :
                 break
 
         _foundBetter = False
-        if _score > _bestScore :
+        if _score >= _bestScore :
             _foundBetter = True
             _bestScore = _score
             # the best weights are the weights of the current agent
@@ -79,17 +80,44 @@ def train( env, agent, agentBest ) :
             if _avgScore > _maxAvgScore :
                 _maxAvgScore = _avgScore
 
-            _progressbar.set_description( 'Training> Max-Avg=%.2f, Curr-Avg=%.2f, Curr=%.2f, NoiseScale=%.2f' \
-                                          % ( _maxAvgScore, _avgScore, _score, agent.noiseScale ) )
+            _progressbar.set_description( 'Training> Max-Avg=%.3f, Curr-Avg=%.3f, Curr=%.3f, NoiseScale=%.3f, Best=%.3f' \
+                                          % ( _maxAvgScore, _avgScore, _score, agent.noiseScale, _bestScore ) )
             _progressbar.refresh()
 
             if _avgScore >= 195.0 :
                 print( 'Solved environment in %d episodes' % ( iepisode ) )
                 break
 
+        else :
+            _progressbar.set_description( 'Training> Curr=%.3f, NoiseScale=%.3f, BestScore=%.3f' \
+                                          % ( _score, agent.noiseScale, _bestScore ) )
+            _progressbar.refresh()            
+
+
+    test( env, agent )
+
 
 def test( env, agent ) :
-    pass
+    _progressbar = tqdm( range( 1, 10 + 1 ), desc = 'Testing>', leave = True )
+    for _ in _progressbar :
+
+        _state = env.reset()
+        _score = 0.0
+        _goodBananas = 0
+        _badBananas = 0
+
+        while True :
+            _action = agent.act( _state )
+            _state, _reward, _done, _ = env.step( _action )
+            env.render()
+
+            _score += _reward
+
+            if _done :
+                break
+
+        _progressbar.set_description( 'Testing> Score=%.2f' % ( _score ) )
+        _progressbar.refresh()
 
 
 def createModelKeras( modelConfig ) :
@@ -117,11 +145,17 @@ def experiment() :
                                         isinstance( _env.action_space, gym.spaces.Box ) else \
                                (_env.action_space.n,)
     _modelConfig.useDiscreteOutputs = isinstance( _env.action_space, gym.spaces.Discrete )
-    _modelConfig.layersDefs = [ { 'name' : 'fc1' , 'type' : 'fc', 'activation' : 'softmax' } ]
+    _modelConfig.layersDefs = [ { 'name' : 'fc1' , 
+                                  'type' : 'fc', 
+                                  'activation' : 'softmax', 
+                                  'useBias' : False, 
+                                  'initializer' : 'uniform', 
+                                  'initializerArgs' : { 'min' : 0., 'max' : 1e-4, 'seed' : SEED } } ]
 
     # create the model with the appropriate backend
     if BACKEND == 'keras' :
         _model = createModelKeras( _modelConfig )
+        _modelBest = createModelKeras( _modelConfig )
     else :
         print( 'ERROR> backend not supported yet, please use either (keras)' )
         sys.exit( -1 )
@@ -161,7 +195,7 @@ def experiment() :
     # create the agent
     _agent = HillClimbingAgent( 'hillclimbing_keras_agent', _agentConfig, _model )
     # create the best agent so far
-    _agentBest = HillClimbingAgent( 'hillclimbing_keras_agent_best', _agentConfig, _model )
+    _agentBest = HillClimbingAgent( 'hillclimbing_keras_agent_best', _agentConfig, _modelBest )
     # and initialize it to the current agent
     _agentBest.clone( _agent )
 

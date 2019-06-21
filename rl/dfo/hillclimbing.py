@@ -2,6 +2,8 @@
 import numpy as np
 from rl.dfo.agent import DFOAgent
 
+from IPython.core.debugger import set_trace
+
 ERROR_MSG_KEY_ERROR = 'ERROR> key (%s) should have been provided'
 
 class HillClimbingAgent( DFOAgent ) :

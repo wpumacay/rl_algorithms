@@ -5,13 +5,17 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras import losses
+from tensorflow.keras import initializers
 from tensorflow.keras import optimizers
 
 from rl.dfo.model import DFOModel
 
+from IPython.core.debugger import set_trace
+
 ERROR_MSG_MODEL_CREATION = 'ERROR> could not create model (%s)'
 ERROR_MSG_LAYER_CREATION = 'ERROR> could not create layer (%s) of model (%s)'
 ERROR_MSG_WRONG_PERTURBATION = 'ERROR> perturbation type (%s) is not supported'
+ERROR_MSG_MODEL_MISMATCH = 'ERROR> there is a mismatch between model (%s) and (%s). Cannot copy'
 
 class DFOModelKeras( DFOModel ) :
 
@@ -42,20 +46,35 @@ class DFOModelKeras( DFOModel ) :
 
         if _ltype == 'fc' :
             # units for the layer, and default as outputshape if last layer
-            _lunits = layerDef.get( 'units', self._outputShape[0] )
+            _lUnits = layerDef.get( 'units', self._outputShape[0] )
             # activation fcn for the layer, and default to linear if none given
-            _lactivation = layerDef.get( 'activation', 'linear' )
+            _lActivation = layerDef.get( 'activation', 'linear' )
+            # whether or not to use bias
+            _lUseBias = layerDef.get( 'useBias', True )
+            # whether or not use an initializer
+            _lInitializerId = layerDef.get( 'initializer', 'glorot_uniform' )
+            _lInitializerArgs = layerDef.get( 'initializerArgs', {} )
+            if _lInitializerId == 'uniform' :
+                _lInitializer = initializers.RandomUniform( minval = _lInitializerArgs.get( 'min', -0.05 ),
+                                                            maxval = _lInitializerArgs.get( 'max', 0.05 ),
+                                                            seed = _lInitializerArgs.get( 'seed', None ) )
+            else :
+                _lInitializer = initializers.glorot_uniform( seed = _lInitializerArgs.get( 'seed', None ) )
 
             # create the dense|fully-connected layer
             if len( self._backbone ) < 1 :
                 # first layer, from inputs to hidden (or perhaps output) units
-                _layer = layers.Dense( units = _lunits, 
+                _layer = layers.Dense( units = _lUnits, 
                                        input_shape = self._inputShape,
-                                       activation = _lactivation )
+                                       activation = _lActivation,
+                                       use_bias = _lUseBias,
+                                       kernel_initializer = _lInitializer )
             else :
                 # intermediate layer, with input shape to be inferred by keras
-                _layer = layers.Dense( units = _lunits,
-                                       activation = _lactivation )
+                _layer = layers.Dense( units = _lUnits,
+                                       activation = _lActivation,
+                                       use_bias = _lUseBias,
+                                       kernel_initializer = _lInitializer )
 
         elif _ltype == 'flatten' :
             # create a flatten layer (flatten n-dim cnn output volume to vector)
@@ -93,8 +112,20 @@ class DFOModelKeras( DFOModel ) :
     def clone( self, other ) :
         assert self._kerasBackboneModel != None, ERROR_MSG_MODEL_CREATION % ( self._name, )
 
-        if other._kerasBackboneModel :
-            self._kerasBackboneModel.set_weights( other._kerasBackboneModel.get_weights() )
+        if not other._kerasBackboneModel :
+            return
+
+        _srcWeights = self._kerasBackboneModel.get_weights()
+        _dstWeights = other._kerasBackboneModel.get_weights()
+
+        assert len( _srcWeights ) == len( _dstWeights ), ERROR_MSG_MODEL_MISMATCH \
+                                                            % ( self._name, other._name )
+
+        _weights = []
+        for i in range( len( _dstWeights ) ) :
+            _weights.append( _dstWeights[i].copy() )
+            
+        self._kerasBackboneModel.set_weights( _weights )
 
 
     def perturb( self, ptype, args ) :
@@ -104,7 +135,7 @@ class DFOModelKeras( DFOModel ) :
         _weights = self._kerasBackboneModel.get_weights()
         for i in range( len( _weights ) ) :
             _perturbation = None
-            
+
             if ptype == 'uniform' :
                 _perturbationScale = args.get( 'perturbationScale', 1e-2 )
                 _perturbation = _perturbationScale * np.random.rand( *_weights[i].shape )

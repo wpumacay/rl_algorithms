@@ -52,5 +52,15 @@ class DFOModelConfig( object ) :
         self.useDiscreteOutputs = True
 
         # layers definitions to be used for backend instantiation
-        self.layersDefs = [ { 'name' : 'hidden_fc1' , 'type' : 'fc', 'units' : 512, 'activation' : 'relu' },
-                            { 'name' : 'out_fc2' , 'type' : 'fc', 'activation' : 'tanh' } ]
+        self.layersDefs = [ # first layer
+                            { 'name' : 'hidden_fc1' , 
+                              'type' : 'fc', 
+                              'units' : 512, 
+                              'activation' : 'relu', 
+                              'useBias' : True, 
+                              'initializer' : 'uniform', 
+                              'initializerArgs' : { 'min' : 0., 'max' : 1. } },
+                            # second|last layer
+                            { 'name' : 'out_fc2' , 
+                              'type' : 'fc', 
+                              'activation' : 'tanh' } ]
