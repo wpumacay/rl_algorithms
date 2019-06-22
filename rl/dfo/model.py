@@ -47,7 +47,7 @@ class DFOModel( abc.ABC ) :
 
 
     @abc.abstractmethod
-    def initialize( self, args ) :
+    def initialize( self, args = {} ) :
         r"""Initializes the model, if required, for the specific backend used
 
         Derived models might need to initialize resources (session, devices)
@@ -76,14 +76,28 @@ class DFOModel( abc.ABC ) :
 
 
     @abc.abstractmethod
-    def clone( self, other ) :
-        r"""Clones the weights of one model into this model
+    def copy( self, other ) :
+        r"""Copies the weights of another model into this model
 
-        This method should also be implemented with the appropriate backend
+        This method should be implemented with the appropriate backend
         functionality, allowing to pass the weights of one network to another.
 
         Args:
             other (DFOModel): model from whom to copy the weights
+
+        """
+        pass
+
+
+    @abc.abstractmethod
+    def clone( self, mame = None ) :
+        r"""Creates a new model, which is a copy of this model
+
+        This method should be implemented with the appropriate backend
+        functionality, allowing to pass the weights of one network to another.
+
+        Args:
+            name (str): name of this new cloned model
 
         """
         pass
@@ -99,6 +113,21 @@ class DFOModel( abc.ABC ) :
 
         """
         pass
+
+
+    @property
+    def name( self ) :
+        return self._name
+    
+
+    @property
+    def inputShape( self ) :
+        return self._inputShape
+    
+
+    @property
+    def outputShape( self ) :
+        return self._outputShape
 
 
     def _printConfig( self ) :

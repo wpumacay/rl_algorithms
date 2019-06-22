@@ -86,7 +86,7 @@ class DFOModelKeras( DFOModel ) :
         return _layer
 
 
-    def initialize( self, args ) :
+    def initialize( self, args = {} ) :
         assert self._kerasBackboneModel != None, ERROR_MSG_MODEL_CREATION % ( self._name, )
 
         # just compile the model, no session required, as it seems keras
@@ -109,7 +109,7 @@ class DFOModelKeras( DFOModel ) :
         return self._kerasBackboneModel.predict( x )
 
 
-    def clone( self, other ) :
+    def copy( self, other ) :
         assert self._kerasBackboneModel != None, ERROR_MSG_MODEL_CREATION % ( self._name, )
 
         if not other._kerasBackboneModel :
@@ -126,6 +126,17 @@ class DFOModelKeras( DFOModel ) :
             _weights.append( _dstWeights[i].copy() )
             
         self._kerasBackboneModel.set_weights( _weights )
+
+
+    def clone( self, name = None ) :
+        # create a new model with the same configuration
+        _clonedModel = DFOModelKeras( name if name is not None else ( self._name + '_clone' ),
+                                      self._config )
+        _clonedModel.initialize()
+        # and copy the weights from this model into the cloned model
+        _clonedModel.copy( self )
+
+        return _clonedModel
 
 
     def perturb( self, ptype, args ) :

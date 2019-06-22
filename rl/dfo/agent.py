@@ -19,7 +19,6 @@ class DFOAgent( abc.ABC ) :
         self._model = model
 
 
-    @abc.abstractmethod
     def act( self, state ) :
         r"""Returns an action by quering the model at the given state
             
@@ -27,11 +26,31 @@ class DFOAgent( abc.ABC ) :
             state (np.ndarray): state representation to be used by the model
 
         """
+        if self._config.actionSpaceType == 'discrete' :
+            # model should return probabilities of each action
+            _actProbs = self._model.eval( state[np.newaxis,...] )
+            if self._config.useDeterministicPolicy :
+                return np.argmax( _actProbs )
+            else :
+                return np.random.choice( self._config.nActions, p = _actProbs )
+        else :
+            # the output comes from a gaussian, with mean given by model output
+            return self._model.eval( state )
+
+
+    @abc.abstractmethod
+    def update( self, transition ) :
+        r"""Updates agent internals when a step is made
+
+        Args:
+            transition (tuple): a transition tuple ( s, a, r, s', done )
+
+        """
         pass
 
 
     @abc.abstractmethod
-    def onEndEpisode( self, args ) :
+    def onEndEpisode( self, args = {} ) :
         r"""Updates agent internals when an episode ends
 
         Args:

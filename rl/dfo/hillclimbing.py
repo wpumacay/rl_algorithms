@@ -11,32 +11,65 @@ class HillClimbingAgent( DFOAgent ) :
     def __init__( self, name, config, model ) :
         super( HillClimbingAgent, self ).__init__( name, config, model )
 
+        # scale factor for the uniform noise applied to the weights
         self._noiseScale = config.noiseScale
+        # score of a trajectory
+        self._score = 0.
+        # best score so far
+        self._bestScore = -np.inf
+        # discount factor
+        self._gamma = config.gamma
+        # step counter
+        self._istep = 0
+
+        # best model so far (clone the current model)
+        self._bestModel = self._model.clone( self._model.name + '_best' )
 
 
-    def act( self, state ) :
-        if self._config.actionSpaceType == 'discrete' :
-            # model should return probabilities of each action
-            _actProbs = self._model.eval( state[np.newaxis,...] )
-            if self._config.useDeterministicPolicy :
-                return np.argmax( _actProbs )
-            else :
-                return np.random.choice( self._config.nActions, p = _actProbs )
-        else :
-            # the output comes from a gaussian, with mean given by model output
-            return self._model.eval( state )
+    def update( self, transition ) :
+        # unpack the reward from the transition ( s, a, r, s', done )
+        _, _, _r, _, _ = transition
+        # update the score, discounting it appropriately
+        self._score += (self._gamma ** self._istep) * _r
+        # and also update the step counter
+        self._istep += 1
 
 
-    def onEndEpisode( self, args ) :
-        assert 'foundBetter' in args, ERROR_MSG_KEY_ERROR % ('foundBetter',)
+    def onEndEpisode( self, args = {} ) :
+        # check if found a better solution
+        if self._score >= self._bestScore :
+            # update the best score so far
+            self._bestScore = self._score
 
-        _foundBetter = args['foundBetter']
-        if _foundBetter :
+            # update the best weights from the current weights 
+            self._bestModel.copy( self._model )
+
+            # update noise factor (reduce it to narrow our search area)
             self._noiseScale = max( self._config.noiseScaleMin, \
                                     self._noiseScale * self._config.noiseDecayFactor )
         else :
+            # roll back to the previous best weights
+            self._model.copy( self._bestModel )
+
+            # update noise factor (increase it to search a larger area)
             self._noiseScale = min( self._config.noiseScaleMax, \
                                     self._noiseScale * self._config.noiseGrowthFactor )
+
+        # perturb the current model for a new candidate
+        self.perturb( 'uniform', { 'perturbationScale' : self._noiseScale } )
+
+##         print( 'best-weights -----------' )
+##         print( self._bestModel._kerasBackboneModel.get_weights() )
+## 
+##         print( 'current-weights --------' )
+##         print( self._model._kerasBackboneModel.get_weights() )
+## 
+##         print( 'best-score: ', self._bestScore )
+##         print( 'score: ', self._score )
+
+        # clear counters and accumulators for the next iteration
+        self._istep = 0
+        self._score = 0.
 
 
     @property

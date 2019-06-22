@@ -17,11 +17,10 @@ BACKEND = 'keras'
 TEST = False
 MAX_EPISODES = 1000
 MAX_EPISODE_LENGTH = 1000
-GAMMA = 1.0
 LOG_WINDOW_SIZE = 100
 SEED = 0
 
-def train( env, agent, agentBest ) :
+def train( env, agent ) :
     # seed the env and random number generator
     env.seed( SEED )
     np.random.seed( SEED )
@@ -29,7 +28,6 @@ def train( env, agent, agentBest ) :
     _scoresBuffer = []
     _scoresAvgs = []
     _scoresWindow = deque( maxlen = LOG_WINDOW_SIZE )
-    _stepsWindow = deque( maxlen = LOG_WINDOW_SIZE )
     _maxAvgScore = -np.inf
     _bestScore = -np.inf
     _progressbar = tqdm( range( 1, MAX_EPISODES + 1 ), desc = 'Training>', leave = True )
@@ -37,48 +35,36 @@ def train( env, agent, agentBest ) :
     for iepisode in _progressbar :
         _s = env.reset()
         _score = 0.
-        _nsteps = 0
 
         for i in range( 1, MAX_EPISODE_LENGTH + 1 ) :
             _a = agent.act( _s )
 
             _snext, _r, _done, _ = env.step( _a )
 
-            _score += _r * ( GAMMA ** i )
+            # send update signal to the agent
+            agent.update( (_s, _a, _r, _snext, _done) )
+
+            # book keeping
+            _score += _r
             _s = _snext
-            _nsteps += 1
 
             if _done :
                 break
 
-        _foundBetter = False
-        if _score >= _bestScore :
-            _foundBetter = True
-            _bestScore = _score
-            # the best weights are the weights of the current agent
-            agentBest.clone( agent )
-        else :
-            # the best weights are still the previously saved best weights
-            agent.clone( agentBest )
-
         # send endEpisode signal to the agent
-        agent.onEndEpisode( { 'foundBetter' : _foundBetter } )
+        agent.onEndEpisode()
 
-        # apply perturbation for next iteration
-        agent.perturb( 'uniform', { 'perturbationScale' : agent.noiseScale } )
+        _bestScore = max( _bestScore, _score )
 
         _scoresBuffer.append( _score )
         _scoresWindow.append( _score )
-        _stepsWindow.append( _nsteps )
 
         if iepisode >= LOG_WINDOW_SIZE :
             _avgScore = np.mean( _scoresWindow )
-            _avgSteps = np.mean( _stepsWindow )
 
             _scoresAvgs.append( _avgScore )
 
-            if _avgScore > _maxAvgScore :
-                _maxAvgScore = _avgScore
+            _maxAvgScore = max( _maxAvgScore, _avgScore )
 
             _progressbar.set_description( 'Training> Max-Avg=%.3f, Curr-Avg=%.3f, Curr=%.3f, NoiseScale=%.3f, Best=%.3f' \
                                           % ( _maxAvgScore, _avgScore, _score, agent.noiseScale, _bestScore ) )
@@ -155,7 +141,6 @@ def experiment() :
     # create the model with the appropriate backend
     if BACKEND == 'keras' :
         _model = createModelKeras( _modelConfig )
-        _modelBest = createModelKeras( _modelConfig )
     else :
         print( 'ERROR> backend not supported yet, please use either (keras)' )
         sys.exit( -1 )
@@ -185,6 +170,7 @@ def experiment() :
                                 isinstance( _env.action_space, gym.spaces.Box ) else (-1.,)
     _agentConfig.aMax = _env.action_space.high if \
                                 isinstance( _env.action_space, gym.spaces.Box ) else (1.,)
+    _agentConfig.gamma = 1.0
     _agentConfig.noiseScale = 1e-2
     _agentConfig.noiseScaleMin = 1e-3
     _agentConfig.noiseScaleMax = 2.0
@@ -194,15 +180,11 @@ def experiment() :
 
     # create the agent
     _agent = HillClimbingAgent( 'hillclimbing_keras_agent', _agentConfig, _model )
-    # create the best agent so far
-    _agentBest = HillClimbingAgent( 'hillclimbing_keras_agent_best', _agentConfig, _modelBest )
-    # and initialize it to the current agent
-    _agentBest.clone( _agent )
 
     if TEST :
         test( _env, _agent )
     else :
-        train( _env, _agent, _agentBest )
+        train( _env, _agent )
 
 
 if __name__ == '__main__' :

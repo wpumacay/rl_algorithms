@@ -38,6 +38,9 @@ class DFOAgentConfig( object ) :
         # for hill-climbing, if actions are deterministic or stochastic
         self.useDeterministicPolicy = True
 
+        # discount factor
+        self.gamma = 1.0
+
 
 class DFOModelConfig( object ) :
 
