@@ -1,58 +1,80 @@
 
 import numpy as np
 
-
+# @TODO: Can use gin-config for this configuration object
 class DFOAgentConfig( object ) :
 
-    def __init__( self ):
+    def __init__( self,
+                  stateSpaceType = 'continuous',
+                  nStates = 2,
+                  sSize = (2,),
+                  sMin = (-1., -1.) ,
+                  sMax = (1., 1.),
+                  actionSpaceType = 'discrete',
+                  nActions = 2,
+                  aSize = (2,),
+                  aMin = (-1., -1.),
+                  aMax = (1., 1.),
+                  eps0 = 0.1,
+                  sigma0 = 0.1,
+                  noiseScale = 1e-2,
+                  noiseScaleMin = 1e-3,
+                  noiseScaleMax = 2.0,
+                  noiseDecayFactor = 0.5,
+                  noiseGrowthFactor = 2.0,
+                  useDeterministicPolicy = True,
+                  gamma = 1.0 ):
         super( DFOAgentConfig, self ).__init__()
 
-        self.stateSpaceType = 'continuous'
+        self.stateSpaceType = stateSpaceType
         # if state space is discrete
-        self.nStates = 2
+        self.nStates = nStates
         # if state space is continuous
-        self.sSize = (2,)
-        self.sMin = (-1., -1.)
-        self.sMax = (1., 1.)
+        self.sSize = sSize
+        self.sMin = sMin
+        self.sMax = sMax
 
-        self.actionSpaceType = 'discrete'
+        self.actionSpaceType = actionSpaceType
         # if action space is discrete
-        self.nActions = 2
+        self.nActions = nActions
         # if action space is continuous
-        self.aSize = (2,)
-        self.aMin = (-1., -1.)
-        self.aMax = (1., 1.)
+        self.aSize = aSize
+        self.aMin = aMin
+        self.aMax = aMax
 
         # parameters for sampling perturbations from a gaussian
-        self.eps0 = 0.1
-        self.sigma0 = 0.1
+        self.eps0 = eps0
+        self.sigma0 = sigma0
 
         # parameters for perturbations from uniform distribution
-        self.noiseScale = 1e-2
-        self.noiseScaleStart = 1e-2
-        self.noiseScaleMin = 1e-3
-        self.noiseScaleMax = 2.0
-        self.noiseDecayFactor = 0.5
-        self.noiseGrowthFactor = 2.0
+        self.noiseScale = noiseScale
+        self.noiseScaleMin = noiseScaleMin
+        self.noiseScaleMax = noiseScaleMax
+        self.noiseDecayFactor = noiseDecayFactor
+        self.noiseGrowthFactor = noiseGrowthFactor
 
         # for hill-climbing, if actions are deterministic or stochastic
-        self.useDeterministicPolicy = True
+        self.useDeterministicPolicy = useDeterministicPolicy
 
         # discount factor
-        self.gamma = 1.0
+        self.gamma = gamma
 
 
+# @TODO: Can use gin-config for this configuration object
 class DFOModelConfig( object ) :
 
-    def __init__( self ) :
+    def __init__( self,
+                  inputShape = (2,),
+                  outputShape = (2,),
+                  useDiscreteOutputs = True ) :
         super( DFOModelConfig, self ).__init__()
 
         # input and output sizes of the network
-        self.inputShape = (2,)
-        self.outputShape = (2,)
+        self.inputShape = inputShape
+        self.outputShape = outputShape
 
         # whether or not output probs, or mean of a gaussian
-        self.useDiscreteOutputs = True
+        self.useDiscreteOutputs = useDiscreteOutputs
 
         # layers definitions to be used for backend instantiation
         self.layersDefs = [ # first layer

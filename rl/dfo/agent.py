@@ -38,6 +38,21 @@ class DFOAgent( abc.ABC ) :
             return self._model.eval( state )
 
 
+    def seed( self, seed ) :
+        r"""Seeds this agent with a given seed
+
+        Seeds this agent and its internal model
+
+        Args:
+            seed (int): seed to use for the agent and its model
+
+        """
+        if not self._model :
+            print( 'ERROR> this agent has no model' )
+        else :
+            self._model.seed( seed )
+
+
     @abc.abstractmethod
     def update( self, transition ) :
         r"""Updates agent internals when a step is made
