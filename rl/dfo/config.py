@@ -1,7 +1,8 @@
 
+import gin
 import numpy as np
 
-# @TODO: Can use gin-config for this configuration object
+@gin.configurable
 class DFOAgentConfig( object ) :
 
     def __init__( self,
@@ -60,13 +61,25 @@ class DFOAgentConfig( object ) :
         self.gamma = gamma
 
 
-# @TODO: Can use gin-config for this configuration object
+@gin.configurable
 class DFOModelConfig( object ) :
 
     def __init__( self,
                   inputShape = (2,),
                   outputShape = (2,),
-                  useDiscreteOutputs = True ) :
+                  useDiscreteOutputs = True,
+                  layersDefs = [ # first layer
+                                 { 'name' : 'hidden_fc1' , 
+                                   'type' : 'fc', 
+                                   'units' : 512, 
+                                   'activation' : 'relu', 
+                                   'useBias' : True, 
+                                   'initializer' : 'uniform', 
+                                   'initializerArgs' : { 'min' : 0., 'max' : 1. } },
+                                 # second|last layer
+                                 { 'name' : 'out_fc2' , 
+                                   'type' : 'fc', 
+                                   'activation' : 'tanh' } ] ) :
         super( DFOModelConfig, self ).__init__()
 
         # input and output sizes of the network
@@ -77,15 +90,4 @@ class DFOModelConfig( object ) :
         self.useDiscreteOutputs = useDiscreteOutputs
 
         # layers definitions to be used for backend instantiation
-        self.layersDefs = [ # first layer
-                            { 'name' : 'hidden_fc1' , 
-                              'type' : 'fc', 
-                              'units' : 512, 
-                              'activation' : 'relu', 
-                              'useBias' : True, 
-                              'initializer' : 'uniform', 
-                              'initializerArgs' : { 'min' : 0., 'max' : 1. } },
-                            # second|last layer
-                            { 'name' : 'out_fc2' , 
-                              'type' : 'fc', 
-                              'activation' : 'tanh' } ]
+        self.layersDefs = layersDefs

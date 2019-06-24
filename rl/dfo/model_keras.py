@@ -1,12 +1,16 @@
 
+import sys
 import numpy as np
-import tensorflow as tf
 
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras import losses
-from tensorflow.keras import initializers
-from tensorflow.keras import optimizers
+try :
+    from tensorflow import keras
+    from tensorflow.keras import layers
+    from tensorflow.keras import losses
+    from tensorflow.keras import initializers
+    from tensorflow.keras import optimizers
+except ImportError :
+    print( 'ERROR> it seems you don\'t have keras installed in your system' )
+    sys.exit( -1 )
 
 from rl.dfo.model import DFOModel
 

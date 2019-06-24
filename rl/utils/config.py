@@ -1,0 +1,29 @@
+
+import gin
+
+@gin.configurable
+class TrainerConfig( object ) :
+
+    def __init__( self,
+                  envType = 'gym',
+                  envName = 'CartPole-v0',
+                  maxEpisodes = 1000,
+                  maxStepsPerEpisode = 1000,
+                  seed = 0,
+                  logWindowSize = 100,
+                  loggerType = 'tqdm',
+                  dlbackend = 'keras',
+                  mode = 'train',
+                  testOnceTrained = True,
+                  numTestEpisodes = 10 ) :
+        self.envType = envType                          # name of the library from which we will create our environment
+        self.envName = envName                          # name of the environment (from the library given by type)
+        self.maxEpisodes = maxEpisodes                  # max. number of episodes to train the agent(s)
+        self.maxStepsPerEpisode = maxStepsPerEpisode    # max. number of steps that an episode will have
+        self.seed = seed                                # random seed for all training
+        self.logWindowSize = logWindowSize              # number of episodes to wait until refreshing logs
+        self.loggerType = loggerType                    # type of logger to use for training
+        self.dlbackend = dlbackend                      # deep-learning backend to use
+        self.mode = mode                                # whether to train or test
+        self.testOnceTrained = testOnceTrained          # whether or not to test once training has finished
+        self.numTestEpisodes = numTestEpisodes          # number of episodes to run during testing

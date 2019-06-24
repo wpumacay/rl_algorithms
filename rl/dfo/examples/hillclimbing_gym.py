@@ -13,6 +13,8 @@ from rl.dfo.config import DFOAgentConfig
 from rl.dfo.config import DFOModelConfig
 from rl.dfo.hillclimbing import HillClimbingAgent
 
+from rl.utils.trainers import SimpleTrainer
+
 BACKEND = 'keras'
 TEST = False
 MAX_EPISODES = 1000

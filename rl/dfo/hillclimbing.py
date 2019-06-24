@@ -25,6 +25,8 @@ class HillClimbingAgent( DFOAgent ) :
         # best model so far (clone the current model)
         self._bestModel = self._model.clone( self._model.name + '_best' )
 
+    def onStartEpisode( self, args = {} ) :
+        pass # do nothing at the beginning of the episode
 
     def update( self, transition ) :
         # unpack the reward from the transition ( s, a, r, s', done )
@@ -57,15 +59,6 @@ class HillClimbingAgent( DFOAgent ) :
 
         # perturb the current model for a new candidate
         self.perturb( 'uniform', { 'perturbationScale' : self._noiseScale } )
-
-##         print( 'best-weights -----------' )
-##         print( self._bestModel._kerasBackboneModel.get_weights() )
-## 
-##         print( 'current-weights --------' )
-##         print( self._model._kerasBackboneModel.get_weights() )
-## 
-##         print( 'best-score: ', self._bestScore )
-##         print( 'score: ', self._score )
 
         # clear counters and accumulators for the next iteration
         self._istep = 0

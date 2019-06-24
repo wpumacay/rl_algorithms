@@ -83,10 +83,11 @@ class Logger( abc.ABC ) :
             self._scoresAvgsArray.append( self._currentAvgScore )
             self._nstepsAvgsArray.append( self._currentAvgNsteps )
 
+        self.log()
+
         # clear counters and accumulators for next iteration
         self._currentScore = 0.
         self._currentSteps = 0
-
 
     @abc.abstractmethod
     def log( self ) :
@@ -109,24 +110,25 @@ class LoggerTqdm( Logger ) :
     def __init__( self, config = {} ) :
         super( LoggerTqdm, self ).__init__( config )
 
-        self._progressbar = tqdm( range( self._maxEpisodes ), desc = 'Training>', leave = True )
+        self._progressbar = tqdm( range( self._maxEpisodes ), desc = 'Running>', leave = True )
 
 
     def log( self ) :
-        if self._nepisodes >= self.logWindowSize :
+        if self._nepisodes >= self._logWindowSize :
             # create the message we will be setting as description
-            _messageStr = 'Training> Best=%.3f, Curr=%.3f, Best-avg=%.3f, Curr-avg=%.3f'
+            _messageStr = 'Running> Best=%.3f, Curr=%.3f, Best-avg=%.3f, Curr-avg=%.3f'
             # create the required information to be replaced in the description
-            _messageParams = ( self._bestScore,
+            _messageParams = ( self._maxScore,
                                self._currentScore,
                                self._maxAvgScore, 
-                               self._avgScore )
+                               self._currentAvgScore )
         else :
             # create the message we will be setting as description
-            _messageStr = 'Training> Curr=%.3f, BestScore=%.3f'
+            _messageStr = 'Running> Curr=%.3f, BestScore=%.3f'
             # create the required information to be replaced in the description
             _messageParams = ( self._currentScore,
-                               self._bestScore )
+                               self._maxScore )
 
+        self._progressbar.update() # increate counter by 1 (as not using it on loop)
         self._progressbar.set_description( _messageStr % _messageParams )
-        self._progressbar.refresh()
+        self._progressbar.refresh() # refresh text and other stuff

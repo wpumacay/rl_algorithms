@@ -2,9 +2,12 @@
 import os
 import sys
 import abc
+import random
 import numpy as np
 from collections import deque
 
+from rl.utils.config import TrainerConfig
+from rl.utils.loggers import LoggerTqdm
 
 class Trainer( abc.ABC ) :
     r"""Base class for all trainers
@@ -17,21 +20,28 @@ class Trainer( abc.ABC ) :
     loop boiler plate code away from the user such that she|he can focus
     only on the agent's implementation
 
+    Args:
+        trainerConfig (TrainerConfig): configuration for the trainer
+
     """
-    def __init__( self, trainerConfig, envBuilder, agentBuilder ) :
+    def __init__( self, trainerConfig ) :
         super( Trainer, self ).__init__()
 
         # save the configuration dictionary for future reference
         self._config = trainerConfig
 
         # grab some information from the trainer configuration
-        self._maxEpisodes = self._config.get( 'maxEpisodes', 1000 )
-        self._maxSteps = self._config.get( 'maxSteps', 1000 )
-        self._logWindowSize = self._config.get( 'logWindowSize', 100 )
-        self._seed = self._config.get( 'seed', 0 )
+        self._maxEpisodes       = self._config.maxEpisodes
+        self._maxSteps          = self._config.maxStepsPerEpisode
+        self._logWindowSize     = self._config.logWindowSize
+        self._loggerType        = self._config.loggerType
+        self._seed              = self._config.seed
+        self._mode              = self._config.mode
+        self._testOnceTrained   = self._config.testOnceTrained
+        self._numTestEpisodes   = self._config.numTestEpisodes
 
 
-    @abc.abcstractmethod
+    @abc.abstractmethod
     def init( self ) :
         r"""Abstract method for trainer initialization
 
@@ -42,7 +52,7 @@ class Trainer( abc.ABC ) :
         pass
 
 
-    @abc.abcstractmethod
+    @abc.abstractmethod
     def train( self, args = {} ) :
         r"""Abstract method to start the training process
 
@@ -53,7 +63,7 @@ class Trainer( abc.ABC ) :
         pass
 
 
-    @abc.abcstractmethod
+    @abc.abstractmethod
     def test( self, args = {} ) :
         r"""Abstract method to start the testing process
 
@@ -64,6 +74,21 @@ class Trainer( abc.ABC ) :
         pass
 
 
+    @property
+    def seed( self ):
+        return self._seed
+
+
+    @property
+    def mode( self ) :
+        return self._mode
+
+
+    @property
+    def testOnceTrained( self ) :
+        return self._testOnceTrained
+
+
 class SimpleTrainer( Trainer ) :
     r"""Creates a simple single-agent single-environment non-parallel trainer
     
@@ -72,33 +97,88 @@ class SimpleTrainer( Trainer ) :
     in a single process (no parallelism).
 
     Args:
-        trainerConfig (dict): configuration for the trainer
-        envBuilder (function): factory method to create the environment
-        agentBuilder (function): factory method to create the agent
+        trainerConfig (TrainerConfig): configuration for the trainer
+        env (Environment): environment to run training on
+        agent (Agent): agent to train
 
     """
-    def __init__( self, trainerConfig, envBuilder, agentBuilder ) :
+    def __init__( self, trainerConfig, env, agent ) :
         super( SimpleTrainer, self ).__init__( trainerConfig )
 
-        self._envBuilder = envBuilder
-        self._agentBuilder = agentBuilder
-
         # single environment to be used for our setup
-        self._env = None
+        self._env = env
         # single agent to be used for our setup
-        self._agent = None
-
-
-    def init( self ) :
-        self._env = self._envBuilder()
-        self._agent = self._agentBuilder()
+        self._agent = agent
 
         assert self._env is not None, 'ERROR> Could not create the environment'
         assert self._agent is not None, 'ERROR> Could not create the agent'
 
+        # logger to be used for saving training information
+        self._logger = None
+
+
+    def init( self ) :
         self._env.seed( self._seed )
-        self._agent.seed( self._seed )
+        # seed numpy and random-module random generators
+        np.random.seed()
+        random.seed()
+
+        if self._loggerType == 'tqdm' :
+            self._logger = LoggerTqdm( { 'maxEpisodes' : self._maxEpisodes,
+                                         'logWindowSize' : self._logWindowSize } )
+        else :
+            print( 'WARNING> logger type %s not supported. Not logging training info' \
+                   % self._loggerType )
 
 
-    def train( self, args ) :
-        pass
+    def train( self, args = {} ) :
+        for iepisode in range( self._maxEpisodes ) :
+            # reset the environment and grab initial observation
+            _s = self._env.reset()
+            # pass the agent some information about the start of an episode
+            self._agent.onStartEpisode( { 's0' : _s } )
+            # update this flag to end an episode
+            _done = False
+
+            while not _done :
+                # grab an action from the agent
+                _a = self._agent.act( _s )
+                # and applied it into the world, and observe the results
+                _snext, _r, _done, _ = self._env.step( _a )
+                # pass the agent the step information for his own usage
+                self._agent.update( ( _s, _a, _r, _snext, _done ) )
+                # pass the logger the step information as well for his own usage
+                if self._logger :
+                    self._logger.update( ( _s, _a, _r, _snext, _done ) )
+
+                # book keeping for next iteration
+                _s = _snext
+
+            # tell the agent the episode just finished
+            self._agent.onEndEpisode()
+            # and also the logger, to update its internal state
+            self._logger.onEndEpisode()
+
+    def test( self, args = {} ) :
+        for iepisode in range( self._numTestEpisodes ) :
+            # reset the environment and grab initial observation
+            _s = self._env.reset()
+            # update this flag to end an episode
+            _done = False
+
+            while not _done :
+                # run inference on the agent
+                _a = self._agent.act( _s )
+                # and apply the action in the environment
+                _snext, _r, _done, _ = self._env.step( _a )
+                # render the environment
+                self._env.render()
+                # pass the logger the step information as well for his own usage
+                if self._logger :
+                    self._logger.update( ( _s, _a, _r, _snext, _done ) )
+
+                # book keeping for next iteration
+                _s = _snext
+
+            # update the logger once the episode ended, and show results so far
+            self._logger.onEndEpisode()
