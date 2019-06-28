@@ -26,6 +26,8 @@ class DFOModelKeras( DFOModel ) :
     def __init__( self, name, config ) :
         # forward declare some resources
         self._kerasBackboneModel = None
+        # random number generator
+        self._randgen = None
 
         super( DFOModelKeras, self ).__init__( name, config )
 
@@ -48,6 +50,8 @@ class DFOModelKeras( DFOModel ) :
         _lname = layerDef['name']
         _ltype = layerDef['type']
 
+        ## set_trace()
+
         if _ltype == 'fc' :
             # units for the layer, and default as outputshape if last layer
             _lUnits = layerDef.get( 'units', self._outputShape[0] )
@@ -62,6 +66,10 @@ class DFOModelKeras( DFOModel ) :
                 _lInitializer = initializers.RandomUniform( minval = _lInitializerArgs.get( 'min', -0.05 ),
                                                             maxval = _lInitializerArgs.get( 'max', 0.05 ),
                                                             seed = _lInitializerArgs.get( 'seed', None ) )
+            elif _lInitializerId == 'normal' :
+                _lInitializer = initializers.RandomNormal( mean = _lInitializerArgs.get( 'mean', 0.0 ),
+                                                           stddev = _lInitializerArgs.get( 'stddev', 0.05 ),
+                                                           seed = _lInitializerArgs.get( 'seed', None ) )
             else :
                 _lInitializer = initializers.glorot_uniform( seed = _lInitializerArgs.get( 'seed', None ) )
 
@@ -106,8 +114,15 @@ class DFOModelKeras( DFOModel ) :
                              metrics = ['accuracy'] )
 
 
+    def seed( self, seed ) :
+        # create and seed a random generator for this model to use
+        self._randgen = np.random.RandomState( seed )
+
+
     def eval( self, x ) :
         assert self._kerasBackboneModel != None, ERROR_MSG_MODEL_CREATION % ( self._name, )
+
+        ## set_trace()
 
         # call predict on x, which should have extra batch dimension
         return self._kerasBackboneModel.predict( x )
@@ -147,23 +162,42 @@ class DFOModelKeras( DFOModel ) :
         assert self._kerasBackboneModel != None, ERROR_MSG_MODEL_CREATION % ( self._name, )
         assert ptype == 'uniform' or ptype == 'gaussian', ERROR_MSG_WRONG_PERTURBATION % ( ptype, )
 
+        # check if the user wanted to recover the random generator to a given state
+        _randState = args.get( 'randState', None )
+        if _randState :
+            self._randgen.set_state( _randState )
+
+        # grab state of the generator
+        _befState = self._randgen.get_state()
+
         _weights = self._kerasBackboneModel.get_weights()
         for i in range( len( _weights ) ) :
             _perturbation = None
 
             if ptype == 'uniform' :
                 _perturbationScale = args.get( 'perturbationScale', 1e-2 )
-                _perturbation = _perturbationScale * np.random.rand( *_weights[i].shape )
+                _perturbation = _perturbationScale * self._randgen.rand( *_weights[i].shape )
 
             elif ptype == 'gaussian' :
-                _perturbationSigma = args.get( 'perturbationSigma', 0.5 )
                 _perturbationScale = args.get( 'perturbationScale', 1.0 )
-                _perturbation = _perturbationSigma * _perturbationScale * \
-                                np.random.randn( *_weights[i].shape )
+                _perturbation = _perturbationScale * self._randgen.randn( *_weights[i].shape )
 
             _weights[i] += _perturbation
 
         self._kerasBackboneModel.set_weights( _weights )
+
+        # grab state of the generator
+        _nowState = self._randgen.get_state()
+
+        return (_befState, _nowState)
+
+
+    def save( self, filename ) :
+        self._kerasBackboneModel.save_weights( filename + '.h5' )
+
+
+    def load( self, filename ) :
+        self._kerasBackboneModel.load_weights( filename + '.h5' )
 
 
     def _printConfig( self ) :

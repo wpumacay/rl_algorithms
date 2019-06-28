@@ -25,8 +25,10 @@ class HillClimbingAgent( DFOAgent ) :
         # best model so far (clone the current model)
         self._bestModel = self._model.clone( self._model.name + '_best' )
 
+
     def onStartEpisode( self, args = {} ) :
         pass # do nothing at the beginning of the episode
+
 
     def update( self, transition ) :
         # unpack the reward from the transition ( s, a, r, s', done )

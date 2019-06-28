@@ -2,17 +2,20 @@
 import rl.utils.config
 import rl.dfo.config
 
+SEED = 0
+
 rl.utils.config.TrainerConfig.envType = 'gym'
 rl.utils.config.TrainerConfig.envName = 'CartPole-v0'
 rl.utils.config.TrainerConfig.maxEpisodes = 200
 rl.utils.config.TrainerConfig.maxStepsPerEpisode = 1000
-rl.utils.config.TrainerConfig.seed = 0
+rl.utils.config.TrainerConfig.seed = %SEED
 rl.utils.config.TrainerConfig.logWindowSize = 100
 rl.utils.config.TrainerConfig.loggerType = 'tqdm'
 rl.utils.config.TrainerConfig.dlbackend = 'keras'
 rl.utils.config.TrainerConfig.mode = 'train'
 rl.utils.config.TrainerConfig.testOnceTrained = True
 rl.utils.config.TrainerConfig.numTestEpisodes = 10
+rl.utils.config.TrainerConfig.modelFilename = 'model_hillclimbing_cartpole'
 
 rl.dfo.config.DFOAgentConfig.gamma = 1.0
 rl.dfo.config.DFOAgentConfig.noiseScale = 1e-2
@@ -27,4 +30,4 @@ rl.dfo.config.DFOModelConfig.layersDefs = [ { 'name' : 'fc1' ,
                                               'activation' : 'softmax', 
                                               'useBias' : False, 
                                               'initializer' : 'uniform', 
-                                              'initializerArgs' : { 'min' : 0., 'max' : 1e-4, 'seed' : 0 } } ]
+                                              'initializerArgs' : { 'min' : 0., 'max' : 1e-4, 'seed' : %SEED } } ]

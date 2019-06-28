@@ -18,6 +18,7 @@ class DFOAgent( abc.ABC ) :
         self._config = config
         self._model = model
         self._seed = 0
+        self._mode = 'train'
 
 
     def act( self, state ) :
@@ -36,7 +37,31 @@ class DFOAgent( abc.ABC ) :
                 return np.random.choice( self._config.nActions, p = _actProbs )
         else :
             # the output comes from a gaussian, with mean given by model output
-            return self._model.eval( state )
+            return self._model.eval( state[np.newaxis,...] )[0] # remove batch dimension
+
+
+    def seed( self, seed = 0 ) :
+        r"""Seeds the agent with a given seed
+
+        Args:
+            seed (int): seed for the random number generator
+
+        """
+        if not self._model :
+            print( 'ERROR> this agent has no model' )
+        else :
+            self._model.seed( seed )
+
+
+    def setMode( self, mode ) :
+        r"""Sets the mode the agent is going to be used (train|test)
+
+        Args:
+            mode (str): mode (train|test) which the agent will be set to
+
+        """
+        self._mode = mode
+
 
     @abc.abstractmethod
     def onStartEpisode( self, args = {} ) :
@@ -47,6 +72,7 @@ class DFOAgent( abc.ABC ) :
 
         """
         pass
+
 
     @abc.abstractmethod
     def update( self, transition ) :

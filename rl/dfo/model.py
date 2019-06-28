@@ -61,6 +61,20 @@ class DFOModel( abc.ABC ) :
 
 
     @abc.abstractmethod
+    def seed( self, seed ) :
+        r"""Passes a given seed to the model to seed its generator
+
+        Derived models need to implement this method according to the seeding
+        method used in the specific implementation used.
+
+        Args:
+            seed (int): seed provided for the generator
+
+        """
+        pass
+
+
+    @abc.abstractmethod
     def eval( self, x ) :
         r"""Implements forward pass of the model
         
@@ -110,9 +124,33 @@ class DFOModel( abc.ABC ) :
         Args:
             ptype (str): type of perturbation to be applied (uniform|gaussian)
             args (dict): parameters defining the perturbation to be applied
+        Returns:
+            (np.ndarray,np.ndarray): state of the random generator (bef.,now)
+
+        """
+        return (None,None)
+
+
+    @abc.abstractmethod
+    def save( self, filename ) :
+        r"""Saves the model into a file for later usage
+
+        Args:
+            filename (str): file name (or fullpath) where to save the weights
 
         """
         pass
+
+
+    @abc.abstractmethod
+    def load( self, filename ) :
+        r"""load a model from a given file
+
+        Args:
+            filename (str): file name (or fullpath) from whom to load the model
+
+        """
+        pass        
 
 
     @property

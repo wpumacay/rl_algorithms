@@ -24,7 +24,9 @@ class DFOAgentConfig( object ) :
                   noiseDecayFactor = 0.5,
                   noiseGrowthFactor = 2.0,
                   useDeterministicPolicy = True,
-                  gamma = 1.0 ):
+                  gamma = 1.0,
+                  populationSize = 50,
+                  elitesFraction = 0.2 ):
         super( DFOAgentConfig, self ).__init__()
 
         self.stateSpaceType = stateSpaceType
@@ -59,6 +61,10 @@ class DFOAgentConfig( object ) :
 
         # discount factor
         self.gamma = gamma
+
+        # in case of population based methods
+        self.populationSize = populationSize
+        self.elitesFraction = elitesFraction
 
 
 @gin.configurable
