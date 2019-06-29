@@ -57,11 +57,20 @@ class DFOAgent( abc.ABC ) :
         r"""Sets the mode the agent is going to be used (train|test)
 
         Args:
-            mode (str): mode (train|test) which the agent will be set to
+            mode (str): mode (train|test|...) which the agent will be set to
 
         """
         self._mode = mode
 
+
+    def getMode( self ) :
+        r"""Gets the current mode of the agent
+
+        Returns:
+            (str): Current mode of the agent (train|test|...)
+
+        """
+        return self._mode
 
     @abc.abstractmethod
     def onStartEpisode( self, args = {} ) :

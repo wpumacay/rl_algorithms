@@ -17,7 +17,8 @@ class TrainerConfig( object ) :
                   testOnceTrained = True,
                   numTestEpisodes = 10,
                   modelFilename = 'model0',
-                  populationSize = -1 ) :
+                  populationSize = -1,
+                  numWorkers = -1 ) :
         self.envType = envType                          # name of the library from which we will create our environment
         self.envName = envName                          # name of the environment (from the library given by type)
         self.maxEpisodes = maxEpisodes                  # max. number of episodes to train the agent(s)
@@ -31,3 +32,4 @@ class TrainerConfig( object ) :
         self.numTestEpisodes = numTestEpisodes          # number of episodes to run during testing
         self.modelFilename = modelFilename              # filename used to save/load a trained model
         self.populationSize = populationSize            # size of the population used by the specific pop.based alg., -1 if not applicable
+        self.numWorkers = numWorkers                    # number of workers used in case of parallel training is used, -1 if not applicable

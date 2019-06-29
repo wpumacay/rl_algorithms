@@ -23,13 +23,13 @@ ERROR_MSG_MODEL_MISMATCH = 'ERROR> there is a mismatch between model (%s) and (%
 
 class DFOModelKeras( DFOModel ) :
 
-    def __init__( self, name, config ) :
+    def __init__( self, name, config, verbose = True ) :
         # forward declare some resources
         self._kerasBackboneModel = None
         # random number generator
         self._randgen = None
 
-        super( DFOModelKeras, self ).__init__( name, config )
+        super( DFOModelKeras, self ).__init__( name, config, verbose )
 
 
     def _buildModel( self ) :
@@ -150,7 +150,8 @@ class DFOModelKeras( DFOModel ) :
     def clone( self, name = None ) :
         # create a new model with the same configuration
         _clonedModel = DFOModelKeras( name if name is not None else ( self._name + '_clone' ),
-                                      self._config )
+                                      self._config,
+                                      verbose = False )
         _clonedModel.initialize()
         # and copy the weights from this model into the cloned model
         _clonedModel.copy( self )
@@ -167,6 +168,12 @@ class DFOModelKeras( DFOModel ) :
         if _randState :
             self._randgen.set_state( _randState )
 
+        # check if requesting only to compute perturbation but not applying it
+        _applyPerturbation = args.get( 'applyPerturbation', True )
+
+        # check if a randgen has been given
+        _externRandGen = args.get( 'externRandGen', None )
+
         # grab state of the generator
         _befState = self._randgen.get_state()
 
@@ -176,15 +183,23 @@ class DFOModelKeras( DFOModel ) :
 
             if ptype == 'uniform' :
                 _perturbationScale = args.get( 'perturbationScale', 1e-2 )
-                _perturbation = _perturbationScale * self._randgen.rand( *_weights[i].shape )
+                if _externRandGen :
+                    _perturbation = _perturbationScale * _externRandGen.rand( *_weights[i].shape )
+                else :
+                    _perturbation = _perturbationScale * self._randgen.rand( *_weights[i].shape )
 
             elif ptype == 'gaussian' :
                 _perturbationScale = args.get( 'perturbationScale', 1.0 )
-                _perturbation = _perturbationScale * self._randgen.randn( *_weights[i].shape )
+                if _externRandGen :
+                    _perturbation = _perturbationScale * _externRandGen.randn( *_weights[i].shape )
+                else :
+                    _perturbation = _perturbationScale * self._randgen.randn( *_weights[i].shape )
 
-            _weights[i] += _perturbation
+            if _applyPerturbation :
+                _weights[i] += _perturbation
 
-        self._kerasBackboneModel.set_weights( _weights )
+        if _applyPerturbation :
+            self._kerasBackboneModel.set_weights( _weights )
 
         # grab state of the generator
         _nowState = self._randgen.get_state()

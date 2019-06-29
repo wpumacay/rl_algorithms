@@ -1,9 +1,9 @@
-
 matplotlib
 numpy
 tqdm
 box2d
 pyglet
+mpi4py
 gym
 h5py
 gin-config

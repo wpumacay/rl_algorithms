@@ -18,7 +18,7 @@ class DFOModel( abc.ABC ) :
         config (DFOModelConfig): Model configuration parameters
 
     """
-    def __init__( self, name, config ) :
+    def __init__( self, name, config, verbose = True ) :
         super( DFOModel, self ).__init__()
 
         self._name = name
@@ -32,7 +32,9 @@ class DFOModel( abc.ABC ) :
         self._backbone = []
 
         self._buildModel()
-        self._printConfig()
+        
+        if verbose :
+            self._printConfig()
 
 
     @abc.abstractmethod
