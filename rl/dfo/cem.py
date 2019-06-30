@@ -223,6 +223,14 @@ class CEMAgentParallel( DFOAgent ) :
                 # store the random state used to create the perturbation
                 self._randStates.append( _befRandState )
 
+        _sgen1 = self._randGens[self._rank].get_state()
+        _sgen2 = self._model._randgen.get_state()
+
+        assert ( _sgen1[0] == _sgen2[0] and
+                 np.array_equal( _sgen1[1], _sgen2[1] ) and
+                 _sgen1[2] == _sgen2[2] and
+                 _sgen1[3] == _sgen2[3] ), 'ERROR> random generators should land in same spot'
+
         ## print( 'rank %s: len(randstates) = %d, totalPopulationSize = %d' % ( self._rank, len( self._randStates ), self._totalPopulationSize ) )
 
         assert len( self._randStates ) == self._totalPopulationSize, \
@@ -241,12 +249,14 @@ class CEMAgentParallel( DFOAgent ) :
         ## print( 'rank %s: len(elitesIndices) = %d, len(randstates) = %d' % ( self._rank, len( _elitesIndices ), len( self._randStates ) ) )
         ## print( 'rank %s: elitesIndices = ', _elitesIndices )
         _elitesRandStates = [ self._randStates[i] for i in _elitesIndices ]
+        _elitesWorker = [ eliteIndex // self._chunkPopulationSize for eliteIndex in _elitesIndices ]
 
         # 3) Update the mean-model from the elites and using the perturbations ...
         #    applied at each step for each elite-sample. Use the same-seed random ...
         #    generator of the mean model with the appropriate random state from before
 
-        for _rstate in _elitesRandStates :
+        for _rstate, _workerId in zip( _elitesRandStates, _elitesWorker ) :
+            self._meanModel.seed( self._seeds[_workerId] )
             self._meanModel.perturb( 'gaussian', 
                                      { 'perturbationScale' : ( self._noiseScale / self._totalElitesSize ),
                                        'randState' : _rstate } )

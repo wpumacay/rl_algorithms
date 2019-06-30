@@ -12,6 +12,7 @@ class TrainerConfig( object ) :
                   seed = 0,
                   logWindowSize = 100,
                   loggerType = 'tqdm',
+                  loggerFile = 'logs',
                   dlbackend = 'keras',
                   mode = 'train',
                   testOnceTrained = True,
@@ -26,6 +27,7 @@ class TrainerConfig( object ) :
         self.seed = seed                                # random seed for all training
         self.logWindowSize = logWindowSize              # number of episodes to wait until refreshing logs
         self.loggerType = loggerType                    # type of logger to use for training
+        self.loggerFile = loggerFile                    # file where to save logs in case of using a file-logger
         self.dlbackend = dlbackend                      # deep-learning backend to use
         self.mode = mode                                # whether to train or test
         self.testOnceTrained = testOnceTrained          # whether or not to test once training has finished

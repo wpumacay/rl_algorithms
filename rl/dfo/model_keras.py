@@ -175,7 +175,10 @@ class DFOModelKeras( DFOModel ) :
         _externRandGen = args.get( 'externRandGen', None )
 
         # grab state of the generator
-        _befState = self._randgen.get_state()
+        if _externRandGen :
+            _befState = _externRandGen.get_state()
+        else :
+            _befState = self._randgen.get_state()
 
         _weights = self._kerasBackboneModel.get_weights()
         for i in range( len( _weights ) ) :
@@ -202,7 +205,10 @@ class DFOModelKeras( DFOModel ) :
             self._kerasBackboneModel.set_weights( _weights )
 
         # grab state of the generator
-        _nowState = self._randgen.get_state()
+        if _externRandGen :
+            _nowState = _externRandGen.get_state()
+        else :
+            _nowState = self._randgen.get_state()
 
         return (_befState, _nowState)
 

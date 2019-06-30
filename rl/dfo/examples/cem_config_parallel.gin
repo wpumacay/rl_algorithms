@@ -2,8 +2,8 @@
 import rl.utils.config
 import rl.dfo.config
 
-POPULATION_SIZE = 100
-NUM_WORKERS = 4
+POPULATION_SIZE = 50
+NUM_WORKERS = 1
 SEED = 0
 
 rl.utils.config.TrainerConfig.envType = 'gym'
@@ -14,19 +14,20 @@ rl.utils.config.TrainerConfig.maxStepsPerEpisode = 1000
 rl.utils.config.TrainerConfig.seed = %SEED
 rl.utils.config.TrainerConfig.logWindowSize = 10
 ## rl.utils.config.TrainerConfig.logWindowSize = 100
-rl.utils.config.TrainerConfig.loggerType = 'tqdm'
+rl.utils.config.TrainerConfig.loggerType = 'file'
+rl.utils.config.TrainerConfig.loggerFile = 'logs_cem_mountaincar_parallel'
 rl.utils.config.TrainerConfig.dlbackend = 'keras'
-rl.utils.config.TrainerConfig.mode = 'train'
+rl.utils.config.TrainerConfig.mode = 'test'
 rl.utils.config.TrainerConfig.testOnceTrained = True
 rl.utils.config.TrainerConfig.numTestEpisodes = 10
-rl.utils.config.TrainerConfig.modelFilename = 'model_cem_mountaincar'
-## rl.utils.config.TrainerConfig.modelFilename = 'model_cem_cartpole'
+rl.utils.config.TrainerConfig.modelFilename = 'model_cem_mountaincar_parallel'
+## rl.utils.config.TrainerConfig.modelFilename = 'model_cem_cartpole_parallel'
 rl.utils.config.TrainerConfig.populationSize = %POPULATION_SIZE
 rl.utils.config.TrainerConfig.numWorkers = %NUM_WORKERS
 
 rl.dfo.config.DFOAgentConfig.gamma = 1.0
 rl.dfo.config.DFOAgentConfig.eps0 = 1.0
-rl.dfo.config.DFOAgentConfig.sigma0 = 0.5
+rl.dfo.config.DFOAgentConfig.sigma0 = 1.0
 rl.dfo.config.DFOAgentConfig.populationSize = %POPULATION_SIZE
 rl.dfo.config.DFOAgentConfig.elitesFraction = 0.2
 
@@ -35,12 +36,12 @@ rl.dfo.config.DFOModelConfig.layersDefs = [ { 'name' : 'fc1',
                                               'units' : 16,
                                               'activation' : 'relu',
                                               'initializer' : 'normal',
-                                              'initializerArgs' : { 'mean' : 0., 'stddev' : 0.5, 'seed' : %SEED } },
+                                              'initializerArgs' : { 'mean' : 0., 'stddev' : 1.0, 'seed' : %SEED } },
                                             { 'name' : 'fc2',
                                               'type' : 'fc',
                                               'activation' : 'tanh',
                                               'initializer' : 'normal',
-                                              'initializerArgs' : { 'mean' : 0., 'stddev' : 0.5, 'seed' : %SEED } } ]
+                                              'initializerArgs' : { 'mean' : 0., 'stddev' : 1.0, 'seed' : %SEED } } ]
 
 ## rl.dfo.config.DFOModelConfig.layersDefs = [ { 'name' : 'fc1' , 
 ##                                               'type' : 'fc', 

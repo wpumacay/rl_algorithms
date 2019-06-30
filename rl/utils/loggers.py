@@ -132,3 +132,35 @@ class LoggerTqdm( Logger ) :
         self._progressbar.update() # increate counter by 1 (as not using it on loop)
         self._progressbar.set_description( _messageStr % _messageParams )
         self._progressbar.refresh() # refresh text and other stuff
+
+class LoggerFile( Logger ) :
+    r"""A logger that stores info in a file
+
+    This class implements a simple file logger, which appends 
+    new logs into a file
+
+    """
+    def __init__( self, config = {} ) :
+        super( LoggerFile, self ).__init__( config )
+
+        # file where to save the logs
+        self._filename = config.get( 'filename', 'logs' ) + '.txt'
+
+    def log( self ) :
+        if self._nepisodes >= self._logWindowSize :
+            # create the message we will be setting as description
+            _messageStr = 'Running> Best=%.3f, Curr=%.3f, Best-avg=%.3f, Curr-avg=%.3f \n\r'
+            # create the required information to be replaced in the description
+            _messageParams = ( self._maxScore,
+                               self._currentScore,
+                               self._maxAvgScore, 
+                               self._currentAvgScore )
+        else :
+            # create the message we will be setting as description
+            _messageStr = 'Running> Curr=%.3f, BestScore=%.3f \n\r'
+            # create the required information to be replaced in the description
+            _messageParams = ( self._currentScore,
+                               self._maxScore )
+
+        with open( self._filename, 'a' ) as fhandle :
+            fhandle.write( _messageStr % _messageParams )

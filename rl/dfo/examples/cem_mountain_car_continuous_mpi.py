@@ -73,6 +73,13 @@ if _envType == 'gym' :
     # grab the type of output of our model accordingly
     _modelConfig.useDiscreteOutputs = isinstance( _env.action_space, gym.spaces.Discrete )
 
+##     # @HACKY: set the corresponding seed according to the process-worker 
+##     for _layerDef in _modelConfig.layersDefs :
+##         if 'initializerArgs' not in _layerDef :
+##             continue
+## 
+##         _layerDef['initializerArgs']['seed'] = _seeds[_rank]
+
     # grab the type of state-space used in the environment
     _agentConfig.stateSpaceType = 'continuous' if \
                                             isinstance( _env.observation_space, gym.spaces.Box ) else \

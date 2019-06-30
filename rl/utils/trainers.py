@@ -9,6 +9,7 @@ from collections import deque
 from tqdm import tqdm, trange
 from rl.utils.config import TrainerConfig
 from rl.utils.loggers import LoggerTqdm
+from rl.utils.loggers import LoggerFile
 
 from IPython.core.debugger import set_trace
 
@@ -38,6 +39,7 @@ class Trainer( abc.ABC ) :
         self._maxSteps          = self._config.maxStepsPerEpisode
         self._logWindowSize     = self._config.logWindowSize
         self._loggerType        = self._config.loggerType
+        self._loggerFile        = self._config.loggerFile
         self._seed              = self._config.seed
         self._mode              = self._config.mode
         self._testOnceTrained   = self._config.testOnceTrained
@@ -353,6 +355,13 @@ class ParallelPopulationTrainer( Trainer ) :
                                              'logWindowSize' : self._logWindowSize } )
             else :
                 self._logger = None
+        elif self._loggerType == 'file' :
+            if self._rank == 0 :
+                self._logger = LoggerFile( { 'maxEpisodes' : self._maxEpisodes if self._mode == 'train' else self._numTestEpisodes,
+                                             'logWindowSize' : self._logWindowSize,
+                                             'filename' : self._loggerFile } )
+            else :
+                self._logger = None
         else :
             print( 'WARNING> logger type %s not supported. Not logging training info' \
                    % self._loggerType )
@@ -428,7 +437,7 @@ class ParallelPopulationTrainer( Trainer ) :
 ##             # @DEBUG
 ##             sys.exit( 0 )
 
-            # run update on the model once all scores have been gathered
+            # run an update on the model once all scores have been gathered
             self._agent.onGathered( _allScores )
 
             ####################################################################
