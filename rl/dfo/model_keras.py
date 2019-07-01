@@ -159,6 +159,38 @@ class DFOModelKeras( DFOModel ) :
         return _clonedModel
 
 
+    def weights( self ) :
+        if self._kerasBackboneModel :
+            return self._kerasBackboneModel.get_weights()
+
+        return []
+
+
+    def areWeightsEqual( self, otherWeights ) :
+        if not self._kerasBackboneModel :
+            return False
+
+        _thisWeights = self._kerasBackboneModel.get_weights()
+
+        # should have the same number of components (np.ndarrays)
+        if len( _thisWeights ) != len( otherWeights ) :
+            return False
+
+        for _thisWeightsComp, _otherWeightsComp in zip( _thisWeights, otherWeights ) :
+            # sanity check, both should be np.ndarrays
+            assert isinstance( _thisWeightsComp, np.ndarray ) or \
+                   isinstance( _otherWeightsComp, np.ndarray ) , \
+                'ERROR> weights components to compare should be np.ndarrays'
+
+            if _thisWeightsComp.shape != _otherWeightsComp.shape :
+                return False
+
+            if not np.array_equal( _thisWeightsComp, _otherWeightsComp ) :
+                return False
+
+        return True
+
+
     def perturb( self, ptype, args ) :
         assert self._kerasBackboneModel != None, ERROR_MSG_MODEL_CREATION % ( self._name, )
         assert ptype == 'uniform' or ptype == 'gaussian', ERROR_MSG_WRONG_PERTURBATION % ( ptype, )

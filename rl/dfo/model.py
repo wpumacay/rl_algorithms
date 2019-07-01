@@ -120,6 +120,36 @@ class DFOModel( abc.ABC ) :
 
 
     @abc.abstractmethod
+    def weights( self ) :
+        r"""Returns the weights of the model
+
+        This method should be implemented with the appropriate backend
+        functionality, allowing to grab the weights of the model as a 
+        list of numpy ndarrays.
+
+        Returns:
+            (list): a list with the weights of each component as an element
+
+        """
+        pass
+
+
+    @abc.abstractmethod
+    def areWeightsEqual( self, otherWeights ) :
+        r"""Compare this model's weights to another set of weights
+
+        This method should be implemented with the appropriate backend
+        functionality, allowing to compare if the weights given are
+        the same as the weights of this model.
+
+        Args:
+            otherWeights (list): a list of np.ndarrays to compare to
+
+        """
+        pass
+
+
+    @abc.abstractmethod
     def perturb( self, ptype, args ) :
         r"""Applies a small perturbation of a given type and given parameters
         

@@ -144,7 +144,7 @@ class LoggerFile( Logger ) :
         super( LoggerFile, self ).__init__( config )
 
         # file where to save the logs
-        self._filename = config.get( 'filename', 'logs' ) + '.txt'
+        self._filename = config.get( 'filename', 'logs' ) + '.log'
 
     def log( self ) :
         if self._nepisodes >= self._logWindowSize :

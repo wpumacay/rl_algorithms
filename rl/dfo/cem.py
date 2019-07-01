@@ -260,3 +260,21 @@ class CEMAgentParallel( DFOAgent ) :
             self._meanModel.perturb( 'gaussian', 
                                      { 'perturbationScale' : ( self._noiseScale / self._totalElitesSize ),
                                        'randState' : _rstate } )
+
+
+    def checkForSameModels( self, otherModelsWeights ) :
+        r"""Checks if this models has same weights compared to other processes models
+
+        Args:
+            otherModelsWeights (list): a list with the weights of each model (each process)
+
+        """
+        _allEqual = True
+        for i, _otherModelWeights in enumerate( otherModelsWeights ) :
+            if not self._meanModel.areWeightsEqual( _otherModelWeights ) :
+                _allEqual = False
+                print( 'WARNING> models %d and %d have different weights' \
+                       % ( self._rank, i ) )
+                
+
+        return _allEqual

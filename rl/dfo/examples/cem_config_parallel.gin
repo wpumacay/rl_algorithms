@@ -2,8 +2,8 @@
 import rl.utils.config
 import rl.dfo.config
 
-POPULATION_SIZE = 50
-NUM_WORKERS = 1
+POPULATION_SIZE = 100
+NUM_WORKERS = 4
 SEED = 0
 
 rl.utils.config.TrainerConfig.envType = 'gym'
@@ -17,7 +17,7 @@ rl.utils.config.TrainerConfig.logWindowSize = 10
 rl.utils.config.TrainerConfig.loggerType = 'file'
 rl.utils.config.TrainerConfig.loggerFile = 'logs_cem_mountaincar_parallel'
 rl.utils.config.TrainerConfig.dlbackend = 'keras'
-rl.utils.config.TrainerConfig.mode = 'test'
+rl.utils.config.TrainerConfig.mode = 'train'
 rl.utils.config.TrainerConfig.testOnceTrained = True
 rl.utils.config.TrainerConfig.numTestEpisodes = 10
 rl.utils.config.TrainerConfig.modelFilename = 'model_cem_mountaincar_parallel'

@@ -368,7 +368,24 @@ class ParallelPopulationTrainer( Trainer ) :
 
 
     def train( self, args = {} ) :
+
         for iepisode in range( self._maxEpisodes ) :
+##             # @DEBUG: Check if all models over all processes have the same weights
+##             _thisWeights = self._agent._meanModel.weights()
+##     
+##             _allOtherModelsWeights = self._mpicomm.allgather( _thisWeights )
+##             if self._agent.checkForSameModels( _allOtherModelsWeights ) :
+##                 _msg = 'INFO> Ok!, seems all models have the same initial weights\n\r'
+##                 print( _msg )
+##             else :
+##                 _msg = 'INFO> NOOO!!!, it seems some models are different to this one\n\r'
+##                 print( _msg )
+##                 sys.exit( -1 )
+##     
+##             if self._rank == 0 :
+##                 with open( 'checks.log', 'a' ) as fhandle :
+##                     fhandle.write( _msg )
+
             ####################################################################
             # run first over the corresponding chunk size. The agent should ...
             # handle the indexing of which sample is being used from the ...
