@@ -11,3 +11,4 @@ dist/
 _pages/
 _site/
 *.log
+*.meta
