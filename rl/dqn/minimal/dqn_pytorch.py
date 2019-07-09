@@ -16,10 +16,10 @@ from IPython.core.debugger import set_trace
 TRAIN                   = False      # whether or not to train our agent
 GAMMA                   = 1.0       # discount factor applied to the rewards
 TAU                     = 0.001     # soft update factor used for target-network updates
-EPS_DECAY_FACTOR        = 0.9985    # discount factory applied every episode
+EPS_DECAY_FACTOR        = 0.9975    # discount factory applied every episode
 REPLAY_BUFFER_SIZE      = 100000    # size of the replay memory
 LEARNING_RATE           = 0.0005    # learning rate used for action network
-BATCH_SIZE              = 32        # batch size of data to grab for learning
+BATCH_SIZE              = 64        # batch size of data to grab for learning
 TRAIN_FREQUENCY_STEPS   = 4         # learn every 4 steps (if there is data)
 LOG_WINDOW              = 100       # size of the smoothing window and logging window
 TRAINING_EPISODES       = 2000      # number of training episodes
@@ -173,14 +173,14 @@ def train( env, num_episodes = 2000 ) :
             progressbar.set_description( message % ( bestScore, _score, epsilon ) )
             progressbar.refresh()
 
-    torch.save( _qActionNetwork.state_dict(), './saved/pytorch/dqn_cartpole.pth' )
+    torch.save( _qActionNetwork.state_dict(), './saved/pytorch/dqn_lunarlander.pth' )
 
 
 def test( env, num_episodes = 10 ) :
 
     _qActionNetwork = QNetwork( env.observation_space.shape,
                                 (env.action_space.n,) )
-    _qActionNetwork.load_state_dict( torch.load( './saved/pytorch/dqn_cartpole.pth' ) )
+    _qActionNetwork.load_state_dict( torch.load( './saved/pytorch/dqn_lunarlander.pth' ) )
     _qActionNetwork.eval()
 
     for _ in tqdm( range( num_episodes ), desc = 'Testing> ' ) :
@@ -195,7 +195,7 @@ def test( env, num_episodes = 10 ) :
 
 if __name__ == '__main__' :
 
-    env = gym.make( 'CartPole-v0' )
+    env = gym.make( 'LunarLander-v2' )
     env.seed( 0 )
     random.seed( 0 )
     np.random.seed( 0 )
