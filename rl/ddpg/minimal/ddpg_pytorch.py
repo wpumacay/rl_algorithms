@@ -133,9 +133,9 @@ class ReplayBuffer( object ) :
 
         _states = torch.tensor( [ _transition[0] for _transition in _batch ], dtype = torch.float ).to( DEVICE )
         _actions = torch.tensor( [ _transition[1] for _transition in _batch ], dtype = torch.float ).to( DEVICE )
-        _rewards = torch.tensor( [ _transition[2] for _transition in _batch ], dtype = torch.float ).to( DEVICE )
+        _rewards = torch.tensor( [ _transition[2] for _transition in _batch ], dtype = torch.float ).unsqueeze( 1 ).to( DEVICE )
         _statesNext = torch.tensor( [ _transition[3] for _transition in _batch ], dtype = torch.float ).to( DEVICE )
-        _dones = torch.tensor( [ _transition[4] for _transition in _batch ], dtype = torch.float ).to( DEVICE )
+        _dones = torch.tensor( [ _transition[4] for _transition in _batch ], dtype = torch.float ).unsqueeze( 1 ).to( DEVICE )
 
         return _states, _actions, _rewards, _statesNext, _dones
 
@@ -146,7 +146,7 @@ class ReplayBuffer( object ) :
 
 class OUNoise( object ) :
 
-    def __init__( self, size, mu = 0, theta = 0.15, sigma = 0.2 ) :
+    def __init__( self, size, mu = 0., theta = 0.15, sigma = 0.2 ) :
         super( OUNoise, self ).__init__()
 
         self._mu = mu * np.ones( size )
