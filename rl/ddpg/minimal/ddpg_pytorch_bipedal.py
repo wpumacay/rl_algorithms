@@ -18,24 +18,26 @@ from IPython.core.debugger import set_trace
 
 TRAIN                   = True      # whether or not to train our agent
 GAMMA                   = 0.99      # discount factor applied to the rewards
-TAU                     = 0.001     # soft update factor used for target-network updates
-REPLAY_BUFFER_SIZE      = 1000000   # size of the replay memory
-LEARNING_RATE_ACTOR     = 0.0001    # learning rate used for actor network
-LEARNING_RATE_CRITIC    = 0.0003    # learning rate used for the critic network
+TAU                     = 0.0005    # soft update factor used for target-network updates
+REPLAY_BUFFER_SIZE      = 200000    # size of the replay memory
+LEARNING_RATE_ACTOR     = 0.00002   # learning rate used for actor network
+LEARNING_RATE_CRITIC    = 0.00005   # learning rate used for the critic network
 BATCH_SIZE              = 128       # batch size of data to grab for learning
 TRAIN_FREQUENCY_STEPS   = 1         # learn every 4 steps (if there is data)
 LOG_WINDOW              = 100       # size of the smoothing window and logging window
 TRAINING_EPISODES       = 2000      # number of training episodes
-MAX_STEPS_IN_EPISODE    = 700       # maximum number of steps in an episode
+MAX_STEPS_IN_EPISODE    = 2000      # maximum number of steps in an episode
 SEED                    = 10        # random seed to be used
-WEIGHT_DECAY            = 0.0001    # L2 weight decay used in Adam
+WEIGHT_DECAY            = 0         # L2 weight decay used in Adam
+EPSILON_DECAY_FACTOR    = 0.999     # decay factor for e-greedy schedule
+TRAINING_STARTING_STEP  = 1024      # step index at which training should start
 
 DEVICE = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
 
 # layer weights initializer, from udacity-deeprl example
 def hidden_init( layer ) :
     fan_in = layer.weight.data.size()[0]
-    lim = 1. / np.sqrt( fan_in )
+    lim = 1. / np.sqrt( fan_in / 2 )
     return ( -lim, lim )
 
 
@@ -51,14 +53,19 @@ class PiNetwork( nn.Module ) :
         super( PiNetwork, self ).__init__()
 
         self.seed = torch.manual_seed( SEED )
-        self.fc1 = nn.Linear( inputShape[0], 256 )
-        self.fc2 = nn.Linear( 256, outputShape[0] )
+        self.bn0 = nn.BatchNorm1d( inputShape[0] )
+        self.fc1 = nn.Linear( inputShape[0], 128 )
+        self.bn1 = nn.BatchNorm1d( 128 )
+        self.fc2 = nn.Linear( 128, 64 )
+        self.bn2 = nn.BatchNorm1d( 64 )
+        self.fc3 = nn.Linear( 64, outputShape[0] )
         self._init()
 
 
     def _init( self ) :
         self.fc1.weight.data.uniform_( *hidden_init( self.fc1 ) )
-        self.fc2.weight.data.uniform_( -3e-3, 3e-3 )
+        self.fc2.weight.data.uniform_( *hidden_init( self.fc2 ) )
+        self.fc3.weight.data.uniform_( -3e-3, 3e-3 )
 
 
     def forward( self, state ) :
@@ -68,8 +75,10 @@ class PiNetwork( nn.Module ) :
             state (torch.tensor): state used to decide the action
 
         """
-        x = F.relu( self.fc1( state ) )
-        x = F.tanh( self.fc2( x ) )
+        x = self.bn0( state )
+        x = F.relu( self.bn1( self.fc1( x ) ) )
+        x = F.relu( self.bn2( self.fc2( x ) ) )
+        x = F.tanh( self.fc3( x ) )
 
         return x
 
@@ -87,9 +96,13 @@ class Qnetwork( nn.Module ) :
         super( Qnetwork, self ).__init__()
 
         self.seed = torch.manual_seed( SEED )
+        self.bn0 = nn.BatchNorm1d( inputShape[0] )
         self.fc1 = nn.Linear( inputShape[0], 256 )
+        self.bn1 = nn.BatchNorm1d( 256 )
         self.fc2 = nn.Linear( 256 + outputShape[0], 256 )
+        self.bn2 = nn.BatchNorm1d( 256 )
         self.fc3 = nn.Linear( 256, 128 )
+        self.bn3 = nn.BatchNorm1d( 128 )
         self.fc4 = nn.Linear( 128, 1 )
         self._init()
 
@@ -109,10 +122,11 @@ class Qnetwork( nn.Module ) :
             action (torch.tensor): action of the pair to be evaluated
 
         """
-        xs = F.leaky_relu( self.fc1( state ) )
-        xaug = torch.cat( [xs, action], dim = 1 )
-        x = F.leaky_relu( self.fc2( xaug ) )
-        x = F.leaky_relu( self.fc3( x ) )
+        x = self.bn0( state )
+        x = F.leaky_relu( self.bn1( self.fc1( x ) ) )
+        x = torch.cat( [x, action], dim = 1 )
+        x = F.leaky_relu( self.bn2( self.fc2( x ) ) )
+        x = F.leaky_relu( self.bn3( self.fc3( x ) ) )
         x = self.fc4( x )
 
         return x
@@ -202,13 +216,13 @@ def train( env, num_episodes = 2000 ) :
                                 env.action_space.shape ).to( DEVICE )
     _actorNetTarget = PiNetwork( env.observation_space.shape,
                                  env.action_space.shape ).to( DEVICE )
-    # _actorNetTarget.copy( _actorNetLocal )
+    _actorNetTarget.copy( _actorNetLocal )
 
     _criticNetLocal = Qnetwork( env.observation_space.shape,
                                 env.action_space.shape ).to( DEVICE )
     _criticNetTarget = Qnetwork( env.observation_space.shape,
                                  env.action_space.shape ).to( DEVICE )
-    # _criticNetTarget.copy( _criticNetLocal )
+    _criticNetTarget.copy( _criticNetLocal )
 
     _rbuffer = ReplayBuffer( REPLAY_BUFFER_SIZE )
     ## _noise = OUNoise( env.action_space.shape )
@@ -224,8 +238,9 @@ def train( env, num_episodes = 2000 ) :
     bestScore = -np.inf
     avgScore = -np.inf
 
-    writer = SummaryWriter( 'summary_bipedal' )
+    writer = SummaryWriter( 'summary_bipedal_bn' )
     istep = 0
+    epsilon = 1.0
 
     for iepisode in progressbar :
 
@@ -234,20 +249,24 @@ def train( env, num_episodes = 2000 ) :
         _score = 0.
 
         for _ in range( MAX_STEPS_IN_EPISODE ) :
-            # choose an action using the actor network and a noise process
-            _actorNetLocal.eval()
-            with torch.no_grad() :
-                _a = _actorNetLocal( torch.from_numpy( _s ).float().to( DEVICE ) ).cpu().data.numpy()
-            _actorNetLocal.train()
-            # add noise and clip accordingly
-            _a += _noise.sample()
-            _a = np.clip( _a, -1., 1. )
+            if istep < TRAINING_STARTING_STEP :
+                _a = np.clip( np.random.randn( *env.action_space.shape ), -1., 1. )
+            else :
+                # choose an action using the actor network and a noise process
+                _actorNetLocal.eval()
+                with torch.no_grad() :
+                    _a = _actorNetLocal( torch.from_numpy( _s ).unsqueeze( 0 ).float().to( DEVICE ) ).cpu().data.numpy().squeeze()
+                _actorNetLocal.train()
+                # add noise and clip accordingly
+                _a += epsilon * _noise.sample()
+                _a = np.clip( _a, -1., 1. )
 
             # take action in the environment and grab bounty
             _snext, _r, _done, _ = env.step( _a )
             _rbuffer.store( (_s, _a, _r, _snext, _done ) )
 
-            if len( _rbuffer ) > BATCH_SIZE and istep % TRAIN_FREQUENCY_STEPS == 0 :
+            if len( _rbuffer ) > BATCH_SIZE and istep % TRAIN_FREQUENCY_STEPS == 0 and \
+                istep >= TRAINING_STARTING_STEP :
                 ## set_trace()
                 # grab a batch of data from the replay buffer
                 _states, _actions, _rewards, _statesNext, _dones = _rbuffer.sample( BATCH_SIZE )
@@ -293,6 +312,10 @@ def train( env, num_episodes = 2000 ) :
             if _done :
                 break
 
+        # update epsilon using schedule
+        if istep >= TRAINING_STARTING_STEP :
+            epsilon = max( 0.1, epsilon * EPSILON_DECAY_FACTOR )
+
         # update some info for logging
         bestScore = max( bestScore, _score )
         scoresWindow.append( _score )
@@ -310,6 +333,8 @@ def train( env, num_episodes = 2000 ) :
 
         writer.add_scalar( 'score', _score, iepisode )
         writer.add_scalar( 'avg_score', np.mean( scoresWindow ), iepisode )
+        writer.add_scalar( 'buffer_size', len( _rbuffer ), iepisode )
+        writer.add_scalar( 'epsilon', epsilon, iepisode )
 
     torch.save( _actorNetLocal.state_dict(), './saved/pytorch/ddpg_actor_bipedal.pth' )
     torch.save( _criticNetLocal.state_dict(), './saved/pytorch/ddpg_critic_bipedal.pth' )
@@ -322,13 +347,15 @@ def test( env, num_episodes = 10 ) :
     _actorNet.load_state_dict( torch.load( './saved/pytorch/ddpg_actor_bipedal.pth' ) )
     _actorNet.eval()
 
+    _noise = OUNoise2( env.action_space.shape )
+
     for _ in tqdm( range( num_episodes ), desc = 'Testing> ' ) :
         _done = False
         _s = env.reset()
 
         while not _done :
-            _a = _actorNet( torch.from_numpy( _s ).float() ).cpu().data.numpy()
-            _s, _r, _done, _ = env.step( _a )
+            _a = _actorNet( torch.from_numpy( _s ).unsqueeze( 0 ).float() ).cpu().data.numpy().squeeze()
+            _s, _r, _done, _ = env.step( _a + 0.0 * _noise.sample() )
             env.render()
 
 

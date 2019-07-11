@@ -13,7 +13,7 @@ from torch import optim as opt
 
 from IPython.core.debugger import set_trace
 
-TRAIN                   = False      # whether or not to train our agent
+TRAIN                   = True      # whether or not to train our agent
 GAMMA                   = 0.99      # discount factor applied to the rewards
 TAU                     = 0.001     # soft update factor used for target-network updates
 REPLAY_BUFFER_SIZE      = 100000    # size of the replay memory

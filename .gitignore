@@ -12,3 +12,5 @@ _pages/
 _site/
 *.log
 *.meta
+*.zip
+envs/

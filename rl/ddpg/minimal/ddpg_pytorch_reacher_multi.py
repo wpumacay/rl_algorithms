@@ -3,6 +3,7 @@ import os
 import gym
 import copy
 import random
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -20,19 +21,21 @@ from tensorboardX import SummaryWriter
 from IPython.core.debugger import set_trace
 
 TRAIN                   = True      # whether or not to train our agent
-GAMMA                   = 0.999     # discount factor applied to the rewards
-TAU                     = 0.0005    # soft update factor used for target-network updates
-REPLAY_BUFFER_SIZE      = 1000000   # size of the replay memory
-LEARNING_RATE_ACTOR     = 0.0002    # learning rate used for actor network
-LEARNING_RATE_CRITIC    = 0.0005    # learning rate used for the critic network
+GAMMA                   = 0.9       # discount factor applied to the rewards
+TAU                     = 0.001     # soft update factor used for target-network updates
+REPLAY_BUFFER_SIZE      = 5000000   # size of the replay memory
+LEARNING_RATE_ACTOR     = 0.001    # learning rate used for actor network
+LEARNING_RATE_CRITIC    = 0.002    # learning rate used for the critic network
 BATCH_SIZE              = 256       # batch size of data to grab for learning
 TRAIN_FREQUENCY_STEPS   = 20        # learn every 10 steps (if there is data)
+TRAIN_NUM_UPDATES       = 10        # number of updates to do when doing a learning
 LOG_WINDOW              = 100       # size of the smoothing window and logging window
 TRAINING_EPISODES       = 2000      # number of training episodes
 MAX_STEPS_IN_EPISODE    = 2000      # maximum number of steps in an episode
 SEED                    = 0         # random seed to be used
 EPSILON_DECAY_FACTOR    = 0.999     # decay factor for e-greedy schedule
 TRAINING_STARTING_STEP  = 1024      # step index at which training should start
+TRAINING_SESSION_ID     = 'sess_0'  # name of the training session
 
 DEVICE = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
 
@@ -168,7 +171,7 @@ class ReplayBuffer( object ) :
 
 class OUNoise( object ) :
 
-    def __init__( self, size, mu = 0., theta = 0.15, sigma = 0.2 ) :
+    def __init__( self, size, mu = 0., theta = 0.15, sigma = 0.05 ) :
         super( OUNoise, self ).__init__()
 
         self._mu = mu * np.ones( size )
@@ -242,7 +245,7 @@ def train( env, num_episodes = 2000 ) :
     bestScore = -np.inf
     avgScore = -np.inf
 
-    writer = SummaryWriter( 'summary_reacher_bn' )
+    writer = SummaryWriter( 'summary_' + TRAINING_SESSION_ID + '_reacher_bn' )
     istep = 0
     epsilon = 1.0
 
@@ -252,7 +255,7 @@ def train( env, num_episodes = 2000 ) :
         _noise.reset()
         _score = 0.
 
-        for _ in range( MAX_STEPS_IN_EPISODE ) :
+        for i in range( MAX_STEPS_IN_EPISODE ) :
             if istep < TRAINING_STARTING_STEP :
                 _aa = np.clip( np.random.randn( *((20,) + env.action_space.shape) ), -1., 1. )
             else :
@@ -267,11 +270,14 @@ def train( env, num_episodes = 2000 ) :
             # take action in the environment and grab bounty
             _ssnext, _rr, _dd, _ = env.step( _aa )
             for _s, _a, _r, _snext, _done in zip( _ss, _aa, _rr, _ssnext, _dd ) :
-                _rbuffer.store( (_s, _a, _r, _snext, _done ) )
+                if i == MAX_STEPS_IN_EPISODE - 1 :
+                    _rbuffer.store( ( _s, _a, _r, _snext, True ) )
+                else :
+                    _rbuffer.store( ( _s, _a, _r, _snext, _done ) )
 
             if len( _rbuffer ) > BATCH_SIZE and istep % TRAIN_FREQUENCY_STEPS == 0 and \
                istep >= TRAINING_STARTING_STEP :
-                for _ in range( 10 ) :
+                for _ in range( TRAIN_NUM_UPDATES ) :
                     # grab a batch of data from the replay buffer
                     _states, _actions, _rewards, _statesNext, _dones = _rbuffer.sample( BATCH_SIZE )
                     # compute current q-values for the 'actions' taken at 'states' using critic
@@ -341,15 +347,15 @@ def train( env, num_episodes = 2000 ) :
         writer.add_scalar( 'buffer_size', len( _rbuffer ), iepisode )
         writer.add_scalar( 'epsilon', epsilon, iepisode )
 
-    torch.save( _actorNetLocal.state_dict(), './saved/pytorch/ddpg_actor_reacher.pth' )
-    torch.save( _criticNetLocal.state_dict(), './saved/pytorch/ddpg_critic_reacher.pth' )
+    torch.save( _actorNetLocal.state_dict(), './saved/pytorch/ddpg_actor_reacher_' + TRAINING_SESSION_ID + '.pth' )
+    torch.save( _criticNetLocal.state_dict(), './saved/pytorch/ddpg_critic_reacher_' + TRAINING_SESSION_ID + '.pth' )
 
 
 def test( env, num_episodes = 10 ) :
     _actorNet = PiNetwork( env.observation_space.shape,
                            env.action_space.shape )
 
-    _actorNet.load_state_dict( torch.load( './saved/pytorch/ddpg_actor_reacher.pth' ) )
+    _actorNet.load_state_dict( torch.load( './saved/pytorch/ddpg_actor_reacher_' + TRAINING_SESSION_ID + '.pth' ) )
     _actorNet.eval()
 
     for _ in tqdm( range( num_episodes ), desc = 'Testing> ' ) :
@@ -364,6 +370,42 @@ def test( env, num_episodes = 10 ) :
 
 
 if __name__ == '__main__' :
+    parser = argparse.ArgumentParser()
+    parser.add_argument( '--sessionId', help='unique identifier of this training run', type=str, default='session_default' )
+    parser.add_argument( '--hp_replay_buffer_size', help='size of the replay buffer to be used', type=int, default=REPLAY_BUFFER_SIZE )
+    parser.add_argument( '--hp_batch_size', help='batch size for updates on both the actor and critic', type=int, default=BATCH_SIZE )
+    parser.add_argument( '--hp_lrate_actor', help='learning rate used for the actor', type=float, default=LEARNING_RATE_ACTOR )
+    parser.add_argument( '--hp_lrate_critic', help='learning rate used for the critic', type=float, default=LEARNING_RATE_CRITIC )
+    parser.add_argument( '--hp_tau', help='soft update parameter (polyak averaging)', type=float, default=TAU )
+    parser.add_argument( '--hp_train_update_freq', help='how often to do a learning step', type=int, default=TRAIN_FREQUENCY_STEPS )
+    parser.add_argument( '--hp_train_num_updates', help='how many updates to do per learning step', type=int, default=TRAIN_NUM_UPDATES )
+
+    args = parser.parse_args()
+
+    TRAINING_SESSION_ID     = args.sessionId
+    REPLAY_BUFFER_SIZE      = args.hp_replay_buffer_size
+    BATCH_SIZE              = args.hp_batch_size
+    LEARNING_RATE_ACTOR     = args.hp_lrate_actor
+    LEARNING_RATE_CRITIC    = args.hp_lrate_critic
+    TAU                     = args.hp_tau
+    TRAIN_FREQUENCY_STEPS   = args.hp_train_update_freq
+    TRAIN_NUM_UPDATES       = args.hp_train_num_updates
+
+    print( '#############################################################' )
+    print( '#                                                           #' )
+    print( '#            Environment and agent setup                    #' )
+    print( '#                                                           #' )
+    print( '#############################################################' )
+    print( 'SessionId               : ', args.sessionId )
+    print( 'Replay buffer size      : ', args.hp_replay_buffer_size )
+    print( 'Batch size              : ', args.hp_batch_size )
+    print( 'Learning-rate actor     : ', args.hp_lrate_actor )
+    print( 'Learning-rate critic    : ', args.hp_lrate_critic )
+    print( 'Tau                     : ', args.hp_tau )
+    print( 'Train update freq       : ', args.hp_train_update_freq )
+    print( 'Train num updates       : ', args.hp_train_num_updates )
+    print( '#############################################################' )
+
     # create the environment
     execPath = os.path.join( os.getcwd(), '../../../envs/Reacher_Linux_multi/Reacher.x86_64' )
     env = createMultiEnvWrapper( execPath, numAgents = 20, mode = 'training' if TRAIN else 'test' )
