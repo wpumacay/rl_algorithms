@@ -21,20 +21,22 @@ from tensorboardX import SummaryWriter
 from IPython.core.debugger import set_trace
 
 TRAIN                   = True      # whether or not to train our agent
-GAMMA                   = 0.9       # discount factor applied to the rewards
+GAMMA                   = 0.99      # discount factor applied to the rewards
 TAU                     = 0.001     # soft update factor used for target-network updates
-REPLAY_BUFFER_SIZE      = 5000000   # size of the replay memory
-LEARNING_RATE_ACTOR     = 0.001    # learning rate used for actor network
-LEARNING_RATE_CRITIC    = 0.002    # learning rate used for the critic network
+REPLAY_BUFFER_SIZE      = 1000000   # size of the replay memory
+LEARNING_RATE_ACTOR     = 0.001     # learning rate used for actor network
+LEARNING_RATE_CRITIC    = 0.001     # learning rate used for the critic network
 BATCH_SIZE              = 256       # batch size of data to grab for learning
 TRAIN_FREQUENCY_STEPS   = 20        # learn every 10 steps (if there is data)
 TRAIN_NUM_UPDATES       = 10        # number of updates to do when doing a learning
 LOG_WINDOW              = 100       # size of the smoothing window and logging window
 TRAINING_EPISODES       = 2000      # number of training episodes
-MAX_STEPS_IN_EPISODE    = 2000      # maximum number of steps in an episode
+MAX_STEPS_IN_EPISODE    = 3000      # maximum number of steps in an episode
 SEED                    = 0         # random seed to be used
-EPSILON_DECAY_FACTOR    = 0.999     # decay factor for e-greedy schedule
-TRAINING_STARTING_STEP  = 1024      # step index at which training should start
+EPSILON_SCHEDULE        = 'linear'  # type of shedule 
+EPSILON_DECAY_FACTOR    = 0.999     # decay factor for e-greedy geometric schedule
+EPSILON_DECAY_LINEAR    = 1e-5      # decay factor for e-greedy linear schedule
+TRAINING_STARTING_STEP  = 0         # step index at which training should start
 TRAINING_SESSION_ID     = 'sess_0'  # name of the training session
 
 DEVICE = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
@@ -58,11 +60,11 @@ class PiNetwork( nn.Module ) :
 
         self.seed = torch.manual_seed( SEED )
         self.bn0 = nn.BatchNorm1d( inputShape[0] )
-        self.fc1 = nn.Linear( inputShape[0], 128 )
-        self.bn1 = nn.BatchNorm1d( 128 )
-        self.fc2 = nn.Linear( 128, 64 )
-        self.bn2 = nn.BatchNorm1d( 64 )
-        self.fc3 = nn.Linear( 64, outputShape[0] )
+        self.fc1 = nn.Linear( inputShape[0], 256 )
+        self.bn1 = nn.BatchNorm1d( 256 )
+        self.fc2 = nn.Linear( 256, 128 )
+        self.bn2 = nn.BatchNorm1d( 128 )
+        self.fc3 = nn.Linear( 128, outputShape[0] )
         self._init()
 
 
@@ -100,22 +102,18 @@ class Qnetwork( nn.Module ) :
         super( Qnetwork, self ).__init__()
 
         self.seed = torch.manual_seed( SEED )
+
         self.bn0 = nn.BatchNorm1d( inputShape[0] )
-        self.fc1 = nn.Linear( inputShape[0], 256 )
-        self.bn1 = nn.BatchNorm1d( 256 )
-        self.fc2 = nn.Linear( 256 + outputShape[0], 256 )
-        self.bn2 = nn.BatchNorm1d( 256 )
-        self.fc3 = nn.Linear( 256, 128 )
-        self.bn3 = nn.BatchNorm1d( 128 )
-        self.fc4 = nn.Linear( 128, 1 )
+        self.fc1 = nn.Linear( inputShape[0], 128 )
+        self.fc2 = nn.Linear( 128 + outputShape[0], 128 )
+        self.fc3 = nn.Linear( 128, 1 )
         self._init()
 
 
     def _init( self ) :
         self.fc1.weight.data.uniform_( *hidden_init( self.fc1 ) )
         self.fc2.weight.data.uniform_( *hidden_init( self.fc2 ) )
-        self.fc3.weight.data.uniform_( *hidden_init( self.fc3 ) )
-        self.fc4.weight.data.uniform_( -3e-3, 3e-3 )
+        self.fc3.weight.data.uniform_( -3e-3, 3e-3 )
 
 
     def forward( self, state, action ) :
@@ -127,11 +125,10 @@ class Qnetwork( nn.Module ) :
 
         """
         x = self.bn0( state )
-        x = F.leaky_relu( self.bn1( self.fc1( x ) ) )
+        x = F.relu( self.fc1( x ) )
         x = torch.cat( [x, action], dim = 1 )
-        x = F.leaky_relu( self.bn2( self.fc2( x ) ) )
-        x = F.leaky_relu( self.bn3( self.fc3( x ) ) )
-        x = self.fc4( x )
+        x = F.relu( self.fc2( x ) )
+        x = self.fc3( x )
 
         return x
 
@@ -315,6 +312,15 @@ def train( env, num_episodes = 2000 ) :
                     _actorNetTarget.copy( _actorNetLocal, TAU )
                     _criticNetTarget.copy( _criticNetLocal, TAU )
     
+                    # update epsilon using schedule
+                    if EPSILON_SCHEDULE == 'linear' :
+                        epsilon = max( 0.1, epsilon - EPSILON_DECAY_LINEAR )
+                    else :
+                        epsilon = max( 0.1, epsilon * EPSILON_DECAY_FACTOR )
+
+                torch.save( _actorNetLocal.state_dict(), './saved/pytorch/ddpg_actor_reacher_' + TRAINING_SESSION_ID + '.pth' )
+                torch.save( _criticNetLocal.state_dict(), './saved/pytorch/ddpg_critic_reacher_' + TRAINING_SESSION_ID + '.pth' )
+
             # book keeping for next iteration
             _ss = _ssnext
             _score += np.mean( _rr )
@@ -322,10 +328,6 @@ def train( env, num_episodes = 2000 ) :
 
             if _dd.any() :
                 break
-
-        # update epsilon using schedule
-        if istep >= TRAINING_STARTING_STEP :
-            epsilon = max( 0.1, epsilon * EPSILON_DECAY_FACTOR )
 
         # update some info for logging
         bestScore = max( bestScore, _score )
@@ -371,6 +373,7 @@ def test( env, num_episodes = 10 ) :
 
 if __name__ == '__main__' :
     parser = argparse.ArgumentParser()
+    parser.add_argument( 'mode', help='mode to run the script (train|test)', type=str, choices=['train','test'], default='train' )
     parser.add_argument( '--sessionId', help='unique identifier of this training run', type=str, default='session_default' )
     parser.add_argument( '--hp_replay_buffer_size', help='size of the replay buffer to be used', type=int, default=REPLAY_BUFFER_SIZE )
     parser.add_argument( '--hp_batch_size', help='batch size for updates on both the actor and critic', type=int, default=BATCH_SIZE )
@@ -382,6 +385,7 @@ if __name__ == '__main__' :
 
     args = parser.parse_args()
 
+    TRAIN                   = ( args.mode.lower() == 'train' )
     TRAINING_SESSION_ID     = args.sessionId
     REPLAY_BUFFER_SIZE      = args.hp_replay_buffer_size
     BATCH_SIZE              = args.hp_batch_size
@@ -396,6 +400,7 @@ if __name__ == '__main__' :
     print( '#            Environment and agent setup                    #' )
     print( '#                                                           #' )
     print( '#############################################################' )
+    print( 'Mode                    : ', args.mode.lower() )
     print( 'SessionId               : ', args.sessionId )
     print( 'Replay buffer size      : ', args.hp_replay_buffer_size )
     print( 'Batch size              : ', args.hp_batch_size )
