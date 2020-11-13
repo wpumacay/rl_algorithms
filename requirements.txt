@@ -7,6 +7,6 @@ mpi4py
 gym
 h5py
 gin-config
-tensorflow-gpu==1.15.2
+tensorflow-gpu==2.3.1
 torch
 torchvision
